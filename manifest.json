@@ -3,7 +3,7 @@
   
     "name": "AWS AlwaysON",
     "description": "GSuite AWS token auto refresh refresh and STS credentials.",
-    "version": "0.4",
+    "version": "0.41",
   
     "browser_action": {
      "default_popup": "menu.html"
