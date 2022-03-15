@@ -57,7 +57,7 @@ main()
         let roleArn=props.arn_prefix+role
         let awsAccount=(roleArn.split(":"))[4]
         let principalArn=`${props.arn_prefix}${awsAccount}:saml-provider/gsuite`
-        let data = "RelayState="+"&SAMLResponse="+SAMLReponse+"&name=&portal=&roleIndex="+encodeURIComponent(roleArn);
+        let data = "RelayState="+"&SAMLResponse="+encodeURIComponent(SAMLReponse)+"&name=&portal=&roleIndex="+encodeURIComponent(roleArn);
         fetch(props.aws_saml_url, {
             method: "POST",
             body: data,
