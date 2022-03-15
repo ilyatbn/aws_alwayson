@@ -106,8 +106,6 @@ main()
             let sessionToken=result.getElementsByTagName("SessionToken")[0].innerHTML
             let sessionExpiration=result.getElementsByTagName("Expiration")[0].innerHTML
             let stsToken = `export AWS_ACCESS_KEY_ID=${accessKeyId} AWS_SECRET_ACCESS_KEY=${secretAccessKey} AWS_SESSION_TOKEN=${sessionToken} AWS_SESSION_EXPIRATATION=${sessionExpiration}`
-            console.log(`${stsToken}`)
-            prompt("STS Export", stsToken);
             sset({'aws_sts_token':stsToken})
         })
     });
