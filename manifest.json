@@ -2,7 +2,7 @@
     "manifest_version": 2,
   
     "name": "AWS AlwaysON",
-    "description": "Stay logged on to AWS from a Gsuite based SAML token.",
+    "description": "GSuite AWS token auto refresh refresh and STS credentials.",
     "version": "0.4",
   
     "browser_action": {

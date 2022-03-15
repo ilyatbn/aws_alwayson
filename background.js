@@ -82,7 +82,7 @@ main()
         });
 
         //GET STS Credentials
-        let STSUrl = `${props.aws_sts_url}/?Version=2011-06-15&Action=AssumeRoleWithSAML&RoleArn=${roleArn}&PrincipalArn=${principalArn}&SAMLAssertion=${encodeURIComponent(SAMLReponse.trim())}&AUTHPARAMS`
+        let STSUrl = `${props.aws_sts_url}/?Version=2011-06-15&Action=AssumeRoleWithSAML&RoleArn=${roleArn}&PrincipalArn=${principalArn}&SAMLAssertion=${encodeURIComponent(SAMLReponse.trim())}&AUTHPARAMS&DurationSeconds=36000`
         fetch(STSUrl, {
             method: "GET",
             headers: {
