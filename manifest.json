@@ -1,0 +1,28 @@
+{
+    "manifest_version": 2,
+  
+    "name": "AWS AlwaysON",
+    "description": "Stay logged on to AWS from a Gsuite based SAML token.",
+    "version": "0.4",
+  
+    "browser_action": {
+     "default_popup": "menu.html"
+    },
+    "icons": { "16": "icon16.png",
+      "48": "icon48.png",
+     "128": "icon128.png" },
+    "permissions": [
+    "storage",
+     "alarms",
+     "cookies",
+     "*://*.google.com/*",
+     "*://*.aws.amazon.com/*"
+     ],
+     "background": {
+        "page": "background.html"
+      },
+      "options_ui": {
+        "page": "options.html",
+        "open_in_tab": false
+      }
+  }
