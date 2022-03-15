@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
     sset({'role_three':$('#role3').val()});
   });
 
-  $('#sts_button1').click(function() {
+  $('[id^="sts_button"]').click(function() {
     chrome.storage.local.get(['aws_sts_token'], function(result) {
       navigator.clipboard.writeText(result.aws_sts_token).then(() => {
         alert("token copied to clipboard");
