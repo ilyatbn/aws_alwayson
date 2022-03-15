@@ -49,6 +49,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
+  $('#sts_button').click(function() {
+    console.log("sts button clicked");
+  });
 
   //1st role
   $("#enable1").change(function() {

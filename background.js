@@ -101,13 +101,13 @@ main()
                 "Accept-Language": "en-US,en;q=0.9"
             }
         }).then(r => r.text()).then(str => new window.DOMParser().parseFromString(str, "text/xml")).then(result => {
-            console.log(result)
             let accessKeyId=result.getElementsByTagName("AccessKeyId")[0].innerHTML
             let secretAccessKey=result.getElementsByTagName("SecretAccessKey")[0].innerHTML
             let sessionToken=result.getElementsByTagName("SessionToken")[0].innerHTML
             let sessionExpiration=result.getElementsByTagName("Expiration")[0].innerHTML
             let stsToken = `export AWS_ACCESS_KEY_ID=${accessKeyId} AWS_SECRET_ACCESS_KEY=${secretAccessKey} AWS_SESSION_TOKEN=${sessionToken} AWS_SESSION_EXPIRATATION=${sessionExpiration}`
             console.log(`${stsToken}`)
+            prompt("STS Export", stsToken);
             sset({'aws_sts_token':stsToken})
         })
     });

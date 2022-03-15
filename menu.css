@@ -25,7 +25,7 @@
   .btncls{
       display: block;
       float: left;
-      margin: 8px 25px;
+      margin: 7px 20px;
       }
   
   .switch {
@@ -89,7 +89,9 @@
   }
 
   .button {
-    float: left;
-    margin: 6px 0px 0px 60px;
-    border-radius: 50%;
+    text-align: center;
+    text-decoration: none;
+    font-size: 12px;
+    margin: 6px;
+    border-radius: 60%;
   }
