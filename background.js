@@ -105,7 +105,7 @@ main()
             let secretAccessKey=result.getElementsByTagName("SecretAccessKey")[0].innerHTML
             let sessionToken=result.getElementsByTagName("SessionToken")[0].innerHTML
             let sessionExpiration=result.getElementsByTagName("Expiration")[0].innerHTML
-            let stsToken = `export AWS_ACCESS_KEY_ID=${accessKeyId} AWS_SECRET_ACCESS_KEY=${secretAccessKey} AWS_SESSION_TOKEN=${sessionToken} AWS_SESSION_EXPIRATATION=${sessionExpiration}`
+            let stsToken = `export AWS_ACCESS_KEY_ID=${accessKeyId} AWS_SECRET_ACCESS_KEY=${secretAccessKey} AWS_SESSION_TOKEN=${sessionToken} AWS_SESSION_EXPIRATION=${sessionExpiration}`
             sset({'aws_sts_token':stsToken})
         })
     });

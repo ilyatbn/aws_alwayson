@@ -5,6 +5,7 @@ v0.3  - redesigned communications between frontend and backend. everything is no
 v0.31 - fixed a milion bugs. only 1.1 million new ones remain.
 v0.4  - added option to get temporary CLI credentials.
 v0.41 - small bugfixes
+v0.42 - fixed session expiration env var
 
 ToDo
 add options menu and btn.
