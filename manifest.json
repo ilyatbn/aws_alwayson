@@ -3,7 +3,7 @@
   
     "name": "AWS AlwaysON",
     "description": "GSuite AWS token auto refresh refresh and STS credentials.",
-    "version": "0.42",
+    "version": "0.50",
     "update_url": "https://letsencrypt.mycompany.io/ao/updates.xml",
     "browser_action": {
      "default_popup": "menu.html"
