@@ -11,7 +11,7 @@ sset({
 });
 
 
-const p_1 = /.*name="SAMLResponse" value="(.*=)"\/>/i;
+const samlRegex = /.*name="SAMLResponse" value="([\s\S]+?)"/i;
 var alarms = chrome.alarms;
 var props,role;
 
@@ -46,13 +46,14 @@ main()
 
   function refreshAwsTokensInit(){
     fetch(props.google_sso_url).then(r => r.text()).then(result => {
+        console.log(`Result ${result}`);
         if(props.multi_account==='1'){
             //if response is 302 to account chooser, parse data and find
             //identifier=".*@mycompany.io" data-item-index="(2)" > email_index
             //also find the as= from it. then pass it all to this bitch
             ***REMOVED***
         }
-        let SAMLReponse=result.match(p_1)[1]
+        let SAMLReponse=result.match(samlRegex)[1]
 
         let roleArn=props.arn_prefix+role
         let awsAccount=(roleArn.split(":"))[4]
