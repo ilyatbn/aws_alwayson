@@ -7,8 +7,8 @@ v0.4  - added option to get temporary CLI credentials.
 v0.41 - small bugfixes
 v0.42 - fixed session expiration env var
 v0.50 - multiple account support
+v0.60 - added menu. made the extension generic and now it can be uploaded to chrome extension store.
 
-ToDo
-add options menu and btn.
-add option to choose org ids in options and then use only roles on the menu.
-move default ssets to oninstall event as default parameters controlable through the options menu.
+
+To Do:
+Dynamic account count based on option.

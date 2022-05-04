@@ -1,5 +1,8 @@
 
 
+body {
+  background-color: rgba(199, 199, 199, 0.8);
+}
 .grid-container {
     display: grid;
     grid: 100px / 1 auto auto;
@@ -7,7 +10,7 @@
     background-color: #b2b2b2;
     padding: 5px;
   }
-  
+
   .grid-container > div {
     background-color: rgba(255, 255, 255, 0.8);
     padding: 10px 0;
@@ -25,7 +28,7 @@
   .btncls{
       display: block;
       float: left;
-      margin: 7px 20px;
+      margin: 7px 10px;
       }
   
   .switch {
@@ -88,10 +91,36 @@
     border-radius: 50%;
   }
 
-  .button {
+  .clibtn {
     text-align: center;
     text-decoration: none;
     font-size: 12px;
     margin: 6px;
     border-radius: 60%;
+  }
+
+  div.a {
+    font-size: 11px;
+    margin-left: 10px;
+    margin-right: 10px;
+    color: dimgray;
+  }
+
+
+  .options_btn{
+    background: url(options.png); 
+    width: 24px; 
+    height: 24px; 
+    border: none; 
+    float: right;
+    position: relative;
+    margin: 50px 0px 0px 5px;
+  }
+
+  .save_btn {
+    margin-top:10px;
+    border: none;
+    background-color: rgb(139, 139, 139);
+    color: rgb(255, 255, 255);
+    font-size: 16px;
   }

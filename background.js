@@ -1,20 +1,12 @@
 import { sget, sset }  from './storageapi.js';
 
-//move this to on install
-sset({
-     'google_sso_url':'https://accounts.google.com/o/saml2/initsso?idpid=abcde&spid=1234567&forceauthn=false&authuser=',
-     'google_account_chooser_url':'https://accounts.google.com/AccountChooser',
-     'aws_saml_url':'https://signin.aws.amazon.com/saml',
-     'aws_sts_url': 'https://sts.amazonaws.com',
-     'refresh_interval':55,
-     'multi_account':0,
-     'arn_prefix':'arn:aws:iam::'
-});
-
-
-const samlRegex = /.*name="SAMLResponse" value="([\s\S]+?)"/i;
-const accountSelectionRegex = /tabindex="\d" jsname="\S*" data-authuser="\d" data-identifier="(\S*@mycompany.io)" data-item-index="(\S)"/i;
-const lookupDomain = "mycompany.io"
+const samlRegex = /name="SAMLResponse" value="([\s\S]+?)"/i;
+const accountSelectionRegex = `tabindex="\\d" jsname="\\S\*" data-authuser="\\d" data-identifier="(\\S\*@DOMAIN)" data-item-index="(\\S)"`;
+const google_account_chooser_url = 'https://accounts.google.com/AccountChooser'
+const aws_saml_url = 'https://signin.aws.amazon.com/saml'
+const aws_sts_url = 'https://sts.amazonaws.com'
+const arn_prefix = 'arn:aws:iam::'
+const google_sso_url = 'https://accounts.google.com/o/saml2/initsso?idpid=IDPID&spid=SPID&forceauthn=false&authuser='
 
 var alarms = chrome.alarms;
 var props,role;
@@ -32,10 +24,10 @@ async function main() {
             }
             if (msg==='syncon')
             {
-                props = await sget(['checked','role_one','role_two','refresh_interval','arn_prefix'
-                  ,'google_sso_url','google_account_chooser_url','multi_account','aws_saml_url','aws_sts_url']);
+                props = await sget(['checked','role_one','role_two','refresh_interval'
+                ,'google_spid','google_idpid','organization_domain', 'session_duration']);
                 if (props.checked === '1'){role = props.role_one;} else{role = props.role_two;}
-                alarms.create('refreshToken', { periodInMinutes: props.refresh_interval });
+                alarms.create('refreshToken', { periodInMinutes: parseInt(props.refresh_interval) });
                 
                 chrome.alarms.onAlarm.addListener(function( alarm ) {
                     refreshAwsTokensInit();
@@ -49,20 +41,20 @@ main()
 
 
   function refreshAwsTokensInit(){
-    var accountIndex
-    
-    fetch(props.google_account_chooser_url).then(response=> {
+    fetch(google_account_chooser_url).then(response=> {
         response.text().then(accounts=> {
-            accountIndex = accounts.match(accountSelectionRegex)[2]
-            fetch(`${props.google_sso_url}${accountIndex}`).then(response => {   
+            var re = new RegExp(accountSelectionRegex.replace("DOMAIN",props.organization_domain),"i");
+            console.log(`Refreshing credentials for ${accounts.match(re)[1]}`)
+            let accountIndex = accounts.match(re)[2]
+            fetch(`${google_sso_url.replace('IDPID',props.google_idpid).replace('SPID',props.google_spid)}${accountIndex}`).then(response => {   
                 response.text().then(result => {
                     let SAMLReponse=result.match(samlRegex)[1]
             
-                    let roleArn=props.arn_prefix+role
+                    let roleArn=arn_prefix+role
                     let awsAccount=(roleArn.split(":"))[4]
-                    let principalArn=`${props.arn_prefix}${awsAccount}:saml-provider/gsuite`
+                    let principalArn=`${arn_prefix}${awsAccount}:saml-provider/gsuite`
                     let data = "RelayState="+"&SAMLResponse="+encodeURIComponent(SAMLReponse)+"&name=&portal=&roleIndex="+encodeURIComponent(roleArn);
-                    fetch(props.aws_saml_url, {
+                    fetch(aws_saml_url, {
                         method: "POST",
                         body: data,
                         headers: {
@@ -86,7 +78,7 @@ main()
                     });
             
                     //GET STS Credentials
-                    let STSUrl = `${props.aws_sts_url}/?Version=2011-06-15&Action=AssumeRoleWithSAML&RoleArn=${roleArn}&PrincipalArn=${principalArn}&SAMLAssertion=${encodeURIComponent(SAMLReponse.trim())}&AUTHPARAMS&DurationSeconds=36000`
+                    let STSUrl = `${aws_sts_url}/?Version=2011-06-15&Action=AssumeRoleWithSAML&RoleArn=${roleArn}&PrincipalArn=${principalArn}&SAMLAssertion=${encodeURIComponent(SAMLReponse.trim())}&AUTHPARAMS&DurationSeconds=${props.session_duration}`
                     fetch(STSUrl, {
                         method: "GET",
                         headers: {
