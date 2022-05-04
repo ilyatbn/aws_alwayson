@@ -9,7 +9,7 @@ document.querySelector('#go-to-options').addEventListener('click', function() {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    var port = chrome.extension.connect({
+    var port = chrome.runtime.connect({
         name: "talk to background.js"
     });
     chrome.storage.local.get(['role_one'], function(result) {
