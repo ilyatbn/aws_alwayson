@@ -2,7 +2,7 @@
 import { sget, sset }  from './storageapi.js';
 
 const samlRegex = /name="SAMLResponse" value="([\s\S]+?)"/i;
-const accountSelectionRegex = `tabindex="\\d" jsname="\\S\*" data-authuser="\\d" data-identifier="(\\S\*@DOMAIN)" data-item-index="(\\S)"`;
+const accountSelectionRegex = `tabindex="\\d" jsname="\\S\*" data-authuser="(\\d)" data-identifier="(\\S\*@DOMAIN)"`;
 const stsTokenRegex = /<AccessKeyId>(\S+)<.*\n.*<SecretAccessKey>(\S+)<.*\n.*<SessionToken>(\S+)<.*\n.*<Expiration>(\S+)</i
 const googleAccountChooserUrl = 'https://accounts.google.com/AccountChooser'
 const awsSamlUrl = 'https://signin.aws.amazon.com/saml'
@@ -44,8 +44,8 @@ main()
     fetch(googleAccountChooserUrl).then(response=> {
         response.text().then(accounts=> {
             var re = new RegExp(accountSelectionRegex.replace("DOMAIN",props.organization_domain),"i");
-            console.log(`Refreshing credentials for ${accounts.match(re)[1]}`)
-            let accountIndex = accounts.match(re)[2]
+            console.log(`Refreshing credentials for ${accounts.match(re)[2]}`)
+            let accountIndex = accounts.match(re)[1]
             fetch(`${googleSsoUrl.replace('IDPID',props.google_idpid).replace('SPID',props.google_spid)}${accountIndex}`).then(response => {   
                 response.text().then(result => {
                     let SAMLReponse=result.match(samlRegex)[1]
