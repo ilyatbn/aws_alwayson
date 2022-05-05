@@ -1,21 +1,27 @@
 # AWS AlwaysON  
+Chrome Extension that allows users that use Google Workspace (gsuite) as an IDP provier to AWS, to easily maintain sessions to the AWS console and get temporary STS credentials.
 ## Features
-- Stay logged in to AWS web console  
+- Refresh AWS console session automatically to keep user logged in. 
 - Get temporary credentials for assumed role to use for CLI access.
+
+## Installation
+Clone this repository.  
+Go to Chrome Extensions page.  
+Enable Developer Mode.  
+Press Load Unpacked.  
+Select the project folder.  
+
+## Using the addon  
+First you will need to configure some settings in the Options menu:  
+![Options](img/options.png)  
+Save and add your role/s.  
+![Main menu](img/main.png)  
+
+Click on the slider to start the token auto refresh procedure.  
+After enabling the refresh you can also click on the CLI button to get the temporary STS credentials.  
+
 ## Changelog
-v0.1.0   - simple interface and basic POC  
-v0.2.0   - redesigned popup menu ui.  
-v0.3.0   - redesigned communications between frontend and backend. everything is now based on local storage data.  
-v0.3.1   - fixed a milion bugs. only 1.1 million new ones remain.  
-v0.4.0   - added option to get temporary CLI credentials.  
-v0.4.1   - small bugfixes.
-v0.4.2   - fixed session expiration env var.  
-v0.5.0   - multiple account support.
-v0.6.0   - added menu. made the extension generic and now it can be uploaded to chrome extension store.  
-v0.6.1   - reduced the amount of permissions to the minimum required in order to work.  
-v0.7.0   - upgraded to manifest V3.  
-v0.7.0.1 - cleaned up some stuff.
-v0.7.1   - added information tooltip in options menu
+[Changelog](/changelog.md)  
 
 ## To Do:  
 Modify everything to support N number of accounts.  
