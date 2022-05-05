@@ -15,6 +15,7 @@ v0.6.0   - added menu. made the extension generic and now it can be uploaded to 
 v0.6.1   - reduced the amount of permissions to the minimum required in order to work.  
 v0.7.0   - upgraded to manifest V3.  
 v0.7.0.1 - cleaned up some stuff.
+v0.7.1   - added information tooltip in options menu
 
 ## To Do:  
 Modify everything to support N number of accounts.  

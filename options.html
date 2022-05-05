@@ -7,27 +7,32 @@
     <link rel="stylesheet" type="text/css" href="menu.css">
 </head>
 <body>
-<div id="main" style="width: 400px; margin: 5px;" />
+<div id="main" style="width: 400px; height:500px; margin: 5px;" />
 <div class="grid-container">
     <div class="item1">
-        <div class="a">Your organization's domain name. Used to locate the correct account when using multiple accounts.</div>
+        <div class="a">Your organization's domain name.</div>
 		<input type="text" value="" id="organization_domain" placeholder="Organization domain name" class="txtbox" />
+        <td><div class="layout"></div><img class="helpimg" id="infoPic" alt="Used to locate the correct account when logged in to several gmail accounts at once." src="moreinfo.png"></td>
     </div>
     <div class="item1">
         <div class="a">Google Identity Provider ID</div>
         <input type="text" value="" id="google_idpid" placeholder="Google Identity Provider ID" class="txtbox" />
+        <td><div class="layout"></div><img class="helpimg" id="infoPic2" alt="Easiest way to locate it is by copying the link to AWS in your Google apps menu. it will contain idpid=YOUR_IDP_ID" src="moreinfo.png"></td>
     </div>
     <div class="item1">
         <div class="a">Google Service Provider ID</div>
 		<input type="text" value="" id="google_spid" placeholder="Google Service Provider ID" class="txtbox" />
+        <td><div class="layout"></div><img class="helpimg" id="infoPic3" alt="Easiest way to locate it is by copying the link to AWS in your Google apps menu. it will contain spid=YOUR_SP_ID" src="moreinfo.png"></td>
     </div>
     <div class="item1">
-        <div class="a">Token refresh interval. Keep below 60 minutes to always stay logged in to AWS console.</div>
+        <div class="a">Token refresh interval.</div>
 		<input type="text" value="" id="refresh_interval" placeholder="Token auto-refresh interval" class="txtbox" />
+        <td><div class="layout"></div><img class="helpimg" id="infoPic4" alt="Keep this under 60. For some reason, AWS Web console session timeout is set to 1 hour maximum even if your IAM role is configured for more." src="moreinfo.png"></td>
     </div>
     <div class="item1">
-        <div class="a">Token session duration. Must not exceed IAM role configuration.</div>
-		<input type="text" value="" id="session_duration" placeholder="Token session duration" class="txtbox" />
+        <div class="a">Token session duration in seconds.</div>
+		<input type="text" value="" id="session_duration" placeholder="Token session duration in seconds" class="txtbox" />
+        <td><div class="layout"></div><img class="helpimg" id="infoPic5" alt="Make sure you do not exceed the value configured in the IAM role. If you don't know it, keep at the default of 1 hour." src="moreinfo.png"></td>
     </div>
 </div>
 <button class="save_btn" id="save">Save</button>

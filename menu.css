@@ -124,3 +124,52 @@ body {
     color: rgb(255, 255, 255);
     font-size: 16px;
   }
+
+
+  .helpimg {
+    margin-left: 25px;
+    margin-top: 6px;  
+    width: 24px;
+    height: 24px;
+  }
+
+  .layout {
+    background-color:#e5e4e3f1;
+    font-size: 12px;
+    position:fixed;
+    z-index: 1;
+    width: 200px;
+    height: 70px;
+    display:none;
+    border-style: outset;  
+    border-radius: 5%;
+    animation: fadeIn 1s;
+    -webkit-animation: fadeIn 1s;
+    -moz-animation: fadeIn 1s;
+    -o-animation: fadeIn 1s;
+    -ms-animation: fadeIn 1s;  
+  }
+  @keyframes fadeIn {
+    0% {opacity:0;}
+    100% {opacity:0.9;}
+  }
+  
+  @-moz-keyframes fadeIn {
+    0% {opacity:0;}
+    100% {opacity:0.9;}
+  }
+  
+  @-webkit-keyframes fadeIn {
+    0% {opacity:0;}
+    100% {opacity:0.9;}
+  }
+  
+  @-o-keyframes fadeIn {
+    0% {opacity:0;}
+    100% {opacity:0.9;}
+  }
+  
+  @-ms-keyframes fadeIn {
+    0% {opacity:0;}
+    100% {opacity:0.9;}
+  }
