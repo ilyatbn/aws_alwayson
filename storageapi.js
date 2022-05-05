@@ -21,6 +21,7 @@ const sget = async function(key) {
   const sset = async function(obj) {
     return new Promise((resolve, reject) => {
       try {
+        console.log(obj)
         chrome.storage.local.set(obj, function() {
           resolve();
         });

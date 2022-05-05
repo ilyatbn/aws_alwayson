@@ -9,52 +9,50 @@ document.querySelector('#go-to-options').addEventListener('click', function() {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    var port = chrome.runtime.connect({
-        name: "talk to background.js"
-    });
-    chrome.storage.local.get(['role_one'], function(result) {
-      if (typeof result.role_one !== 'undefined') {
-        $('#role1').val(result.role_one);
+  var port = chrome.runtime.connect({
+      name: "talk to background.js"
+  });
+  //get the currently checked checkbox
+  chrome.storage.local.get(['checked'], function(result) {
+    if (typeof result.checked !== 'undefined') {
+      let dataIndex = $(`#${result.checked}`).attr("data-index");
+      //find the checkbox with the same data-index as the role and set it as checked.
+      $("input[id^='enable'][type='checkbox']").each(function(){
+        if($(this).attr("data-index")==dataIndex){
+          $(this).prop("checked", true);
+        }
+      })
+
+    };
+  });
+  //populate the textboxes from local storage
+  $("input[id^='role']").each(function(){
+    let id = $(this).attr("id")
+    let currentRoleTxtBox = $(this)
+    chrome.storage.local.get([id], function(result) {
+      if (typeof result[id] !== 'undefined') {
+        currentRoleTxtBox.val(result[id]);
       };
     });
-  chrome.storage.local.get(['role_two'], function(result) {
-    if (typeof result.role_two !== 'undefined') {
-      $('#role2').val(result.role_two);
-    };
-  });    
-  chrome.storage.local.get(['role_three'], function(result) {
-    if (typeof result.role_two !== 'undefined') {
-      $('#role3').val(result.role_two);
-    };    
   });
-  chrome.storage.local.get(['checked'], function(result) {
-    if (result.checked === '1') {
-      $("#enable1").prop("checked", true);
+  //uncheck all checkboxes when modifying role ARNs
+  $("input[id^='role']").focus(function() {
+    $("input[id^='enable'][type='checkbox']").each(function(index, obj){
+      $(this).prop("checked", false);
+    });
+    port.postMessage('syncoff');
+  });
+  //Save data to local storage automatically when not focusing on TxtBox
+  $("input[id^='role']").focusout(function() {
+    let roleName = $(this).attr("id")
+    let roleValue = $(this).val()
+    let obj ={
+      [roleName]:roleValue
     }
-    if (result.checked === '2') {
-      $("#enable2").prop("checked", true);
-    };
-    if (result.checked === '3') {
-      $("#enable3").prop("checked", true);
-    }    
+    sset(obj);
   });
 
-  $('#role1').add('#role2').add('#role3').focus(function() {
-    $("#enable1").prop("checked", false);
-    $("#enable2").prop("checked", false);
-    $("#enable3").prop("checked", false);
-    port.postMessage('synchoff');
-  });
-  $('#role1').focusout(function(){
-    sset({'role_one':$('#role1').val()});
-  });
-  $('#role2').focusout(function(){
-    sset({'role_two':$('#role2').val()});
-  });
-  $('#role3').focusout(function(){
-    sset({'role_three':$('#role3').val()});
-  });
-
+  //get the STS token from storage when clicking the CLI button.
   $('[id^="sts_button"]').click(function() {
     chrome.storage.local.get(['aws_sts_token'], function(result) {
       navigator.clipboard.writeText(result.aws_sts_token).then(() => {
@@ -65,65 +63,33 @@ document.addEventListener('DOMContentLoaded', function() {
       
     });
   });
-
-
-  //1st role
-  $("#enable1").change(function() {
-    if(this.checked){
-      $("#enable2").prop("checked", false);
-      $("#enable3").prop("checked", false);
-      sset({'role':$('#role1').val()});
-      sset({'checked':'1'});
+ 
+  //When a checkbox is changed
+  $("input[id^='enable'][type='checkbox']").change(function() {
+    let id = $(this).attr("id")
+    let dataIndex = $(this).attr("data-index")
+    if(!this.checked){
+      port.postMessage('syncoff');
+    }
+    else {
+      //uncheck other checkboxes.
+      $("input[id^='enable'][type='checkbox']").each(function(){
+        if($(this).attr("id")!=id){
+          $(this).prop("checked", false)
+        }
+      })
+      //find the roleTxtBox with the same data-index as the checkbox and set it's id as checked.
+      $("input[id^='role']").each(function(){
+        if($(this).attr("data-index")==dataIndex){
+          sset({'checked':$(this).attr("id")});
+        }
+      })
+      
       port.postMessage("syncon");
       port.onMessage.addListener(function(msg) {
         console.log("Message received from background:" + msg);
       });  
-    }
-    else{
-      if (!$('#enable2').checked)
-      {
-        port.postMessage('syncoff');
-      }
-    }
-  });
 
-  //2nd role
-  $("#enable2").change(function() {
-    if(this.checked){
-      $("#enable1").prop("checked", false);
-      $("#enable3").prop("checked", false);
-      sset({'role':$('#role2').val()});
-      sset({'checked':'2'});
-      port.postMessage('syncon');
-      port.onMessage.addListener(function(msg) {
-        console.log("Message received from background:" + msg);
-      });  
     }
-    else{
-      if (!$('#enable1').checked)
-      {
-        port.postMessage('syncoff');
-      }
-    }
-  });
-
-  //3nd role
-  $("#enable3").change(function() {
-    if(this.checked){
-      $("#enable1").prop("checked", false);
-      $("#enable2").prop("checked", false);
-      sset({'role':$('#role3').val()});
-      sset({'checked':'3'});
-      port.postMessage('syncon');
-      port.onMessage.addListener(function(msg) {
-        console.log("Message received from background:" + msg);
-      });  
-    }
-    else{
-      if (!$('#enable3').checked)
-      {
-        port.postMessage('syncoff');
-      }
-    }
-  });  
+  })
 }, false);

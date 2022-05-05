@@ -26,9 +26,7 @@ async function main() {
             }
             if (msg==='syncon')
             {
-                props = await sget(['checked','role_one','role_two','refresh_interval'
-                ,'google_spid','google_idpid','organization_domain', 'session_duration']);
-                if (props.checked === '1'){role = props.role_one;} else{role = props.role_two;}
+                props = await sget(null)
                 alarms.create('refreshToken', { periodInMinutes: parseInt(props.refresh_interval) });
                 
                 chrome.alarms.onAlarm.addListener(function( alarm ) {
@@ -51,7 +49,7 @@ main()
             fetch(`${googleSsoUrl.replace('IDPID',props.google_idpid).replace('SPID',props.google_spid)}${accountIndex}`).then(response => {   
                 response.text().then(result => {
                     let SAMLReponse=result.match(samlRegex)[1]
-            
+                    role = props[props.checked]
                     let roleArn=arnPrefix+role
                     let awsAccount=(roleArn.split(":"))[4]
                     let principalArn=`${arnPrefix}${awsAccount}:saml-provider/gsuite`
