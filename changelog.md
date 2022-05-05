@@ -15,3 +15,4 @@ v0.7.1   - added information tooltip in options menu. modified the readme. open 
 v0.7.2   - large refactor to support dynamic role count (part1)  
 v0.7.2.1 - fixed some small issue with the account index selection. it worked fine previosuly so need to keep watching this.  
 v0.8.0  - dynamic role count implemented. control in the options for now.
+v0.8.0.1 - split css menu and options

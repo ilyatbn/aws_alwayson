@@ -1,0 +1,92 @@
+
+
+body {
+  background-color: rgba(199, 199, 199, 0.8);
+}
+.grid-container {
+    display: grid;
+    grid: 100px / 1 auto auto;
+    grid-gap: 5px;
+    background-color: #b2b2b2;
+    padding: 5px;
+  }
+
+  .grid-container > div {
+    background-color: rgba(255, 255, 255, 0.8);
+    padding-bottom: 10px;
+    font-size: 20px;
+  }
+  
+  .txtbox{
+          display: block;
+          float: left;
+          height: 30px;
+          width: 300px;
+          margin-left: 10px;
+        }
+  
+  div.a {
+    font-size: 11px;
+    margin-left: 10px;
+    margin-right: 10px;
+    padding-bottom: 5px;
+    padding-top: 3px;
+    color: dimgray;
+  }
+
+  .save_btn {
+    margin-top:10px;
+    border: none;
+    background-color: rgb(139, 139, 139);
+    color: rgb(255, 255, 255);
+    font-size: 16px;
+  }
+
+
+  .helpimg {
+    margin-left: 25px;
+    margin-top: 6px;  
+    width: 24px;
+    height: 24px;
+  }
+
+  .layout {
+    background-color:#e5e4e3f1;
+    font-size: 12px;
+    position:fixed;
+    z-index: 1;
+    width: 200px;
+    height: 70px;
+    display:none;
+    border-style: outset;  
+    border-radius: 5%;
+    animation: fadeIn 1s;
+    -webkit-animation: fadeIn 1s;
+    -moz-animation: fadeIn 1s;
+    -o-animation: fadeIn 1s;
+    -ms-animation: fadeIn 1s;  
+  }
+  @keyframes fadeIn {
+    0% {opacity:0;}
+    100% {opacity:0.9;}
+  }
+  
+  @-moz-keyframes fadeIn {
+    0% {opacity:0;}
+    100% {opacity:0.9;}
+  }
+  
+  @-webkit-keyframes fadeIn {
+    0% {opacity:0;}
+    100% {opacity:0.9;}
+  }
+  
+  @-o-keyframes fadeIn {
+    0% {opacity:0;}
+    100% {opacity:0.9;}
+  }
+  
+  @-ms-keyframes fadeIn {
+    0% {opacity:0;}
+    100% {opacity:0.9;}
+  }
