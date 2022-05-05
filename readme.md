@@ -24,5 +24,4 @@ After enabling the refresh you can also click on the CLI button to get the tempo
 [Changelog](/changelog.md)  
 
 ## To Do:  
-make the cli button unclickbable and grayed out if the checkbox isn't checked.  
-add option for OS so that the cli can create windows, linux and macos export commands(find OS from chrome).  
+Nothing..

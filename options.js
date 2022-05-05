@@ -5,7 +5,6 @@ function save_options() {
     var refreshInterval = document.getElementById('refresh_interval').value;
     var sessionDuration = document.getElementById('session_duration').value;
     var roleCount = document.getElementById('roleCount').value;
-    console.log("org:"+orgDomain)
     chrome.storage.local.set({
         organization_domain: orgDomain,
         google_spid: spid,
@@ -46,7 +45,6 @@ $("img[id^='infoPic']").hover(function () {
   $(".layout").css("display", "block");
   $(".layout").text($(this).attr("alt")); 
 }).mouseover( function(event){
-  console.log(`y:${event.pageY} offset:${$(this).offset().top}`)
   var left = event.pageX - $(this).offset().left + 100;
   var top = $(this).offset().top - window.scrollY - 32 ;
   $('.layout').css({top: top,left: left});

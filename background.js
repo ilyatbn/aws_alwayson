@@ -11,7 +11,7 @@ const arnPrefix = 'arn:aws:iam::'
 const googleSsoUrl = 'https://accounts.google.com/o/saml2/initsso?idpid=IDPID&spid=SPID&forceauthn=false&authuser='
 
 var alarms = chrome.alarms;
-var props,role;
+var props,role
 
 async function main() {
     chrome.runtime.onConnect.addListener(function(port) {
@@ -96,7 +96,16 @@ main()
                         let secretAccessKey=data[2]
                         let sessionToken=data[3]
                         let sessionExpiration=data[4]
-                        let stsToken = `export AWS_ACCESS_KEY_ID=${accessKeyId} AWS_SECRET_ACCESS_KEY=${secretAccessKey} AWS_SESSION_TOKEN=${sessionToken} AWS_SESSION_EXPIRATION=${sessionExpiration}`
+                        let platform = navigator?.userAgentData?.platform || navigator?.platform || 'unknown'
+                        let stsToken
+                        switch (platform) {
+                            case 'Windows':
+                              stsToken = `set AWS_ACCESS_KEY_ID=${accessKeyId} && set AWS_SECRET_ACCESS_KEY=${secretAccessKey} && set AWS_SESSION_TOKEN=${sessionToken} && set AWS_SESSION_EXPIRATION=${sessionExpiration}`
+                              break;
+                            default:
+                              stsToken = `export AWS_ACCESS_KEY_ID=${accessKeyId} AWS_SECRET_ACCESS_KEY=${secretAccessKey} AWS_SESSION_TOKEN=${sessionToken} AWS_SESSION_EXPIRATION=${sessionExpiration}`
+                          }
+                          
                         sset({'aws_sts_token':stsToken})
                     }).catch((error) => {
                         console.error('Error:', error);

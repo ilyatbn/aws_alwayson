@@ -14,5 +14,6 @@ v0.7.0.1 - cleaned up some stuff.
 v0.7.1   - added information tooltip in options menu. modified the readme. open sourced the project.  
 v0.7.2   - large refactor to support dynamic role count (part1)  
 v0.7.2.1 - fixed some small issue with the account index selection. it worked fine previosuly so need to keep watching this.  
-v0.8.0  - dynamic role count implemented. control in the options for now.
-v0.8.0.1 - split css menu and options
+v0.8.0   - dynamic role count implemented. control in the options for now.  
+v0.8.0.1 - split css menu and options.  
+v1.0.0   - Added OS detection to set different cli environment variable set command on windows. Made sure you can only get the cli credentials if you press the right cli button. 

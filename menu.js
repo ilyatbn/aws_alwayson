@@ -14,9 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   //create divs under grid-container
   chrome.storage.local.get(['roleCount'], function(result) {
-    console.log(`creating divs`)
     for (let i = 0; i < parseInt(result.roleCount); i++) {
-      console.log(`i:${i}`)
       jQuery('<div>', {
         id: `item${i}`,
         class: `item${i}`,
@@ -46,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       jQuery('<input>', {
         type: "checkbox",
-        id: `enable${1}`,
+        id: `enable${i}`,
         "data-index": i
       }).appendTo(`#label${i}`);
       
@@ -60,7 +58,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     //get the currently checked checkbox
     chrome.storage.local.get(['checked'], function(result) {
-      console.log(`getting checked:${result.checked}`)
       if (typeof result.checked !== 'undefined') {
         let dataIndex = $(`#${result.checked}`).attr("data-index");
         //find the checkbox with the same data-index as the role and set it as checked.
@@ -76,9 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
     $("input[id^='role']").each(function(){
       let id = $(this).attr("id")
       let currentRoleTxtBox = $(this)
-      console.log(`getting role data for ${id}`)
       chrome.storage.local.get([id], function(result) {
-        console.log(`role data is${result[id]}`)
         if (typeof result[id] !== 'undefined') {
           currentRoleTxtBox.val(result[id]);
         };
@@ -105,14 +100,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     //get the STS token from storage when clicking the CLI button.
     $('[id^="sts_button"]').click(function() {
-      chrome.storage.local.get(['aws_sts_token'], function(result) {
-        navigator.clipboard.writeText(result.aws_sts_token).then(() => {
-          alert("token copied to clipboard");
-        }, () => {
-          alert("failed copying to clipboard");
+      let index = $(this).attr("data-index")
+      console.log(`index ${index}`)
+      console.log($(`#enable${index}`).prop("checked"))
+      if ($(`#enable${index}`).prop("checked")){
+        chrome.storage.local.get(['aws_sts_token'], function(result) {
+          navigator.clipboard.writeText(result.aws_sts_token).then(() => {
+            alert("token copied to clipboard");
+          }, () => {
+            alert("failed copying to clipboard");
+          });
         });
-        
-      });
+      }
     });
   
     //When a checkbox is changed
