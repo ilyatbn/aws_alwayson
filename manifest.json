@@ -12,8 +12,7 @@
      "128": "icon128.png" },
     "permissions": [
     "storage",
-     "alarms",
-     "cookies"
+     "alarms"
     ],
     "host_permissions":[
      "https://accounts.google.com/*",
