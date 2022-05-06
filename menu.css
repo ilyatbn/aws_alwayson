@@ -99,7 +99,7 @@ body {
   }
 
   .options_btn{
-    background: url(options.png); 
+    background: url(/img/options.png); 
     width: 24px; 
     height: 24px; 
     border: none; 

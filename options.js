@@ -36,11 +36,9 @@ function restore_options() {
         document.getElementById('refresh_interval').value = opt.refresh_interval;
         document.getElementById('session_duration').value = opt.session_duration;
         document.getElementById('roleCount').value = opt.roleCount;
-
     });
 }
-
-
+//display help information
 $("img[id^='infoPic']").hover(function () {
   $(".layout").css("display", "block");
   $(".layout").text($(this).attr("alt")); 

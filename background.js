@@ -17,14 +17,14 @@ async function main() {
     chrome.runtime.onConnect.addListener(function(port) {
         port.onMessage.addListener(async function(msg) {
             console.log('received '+msg)
-            if (msg==='syncoff'){
-                console.log('turning off sync');
+            if (msg==='refreshoff'){
+                console.log('turning off background refresh');
                 sset({'checked':'0'});
                 alarms.clear("refreshToken");
                 alarms.onAlarm.removeListener(refreshAwsTokensInit);
                 port.postMessage("OK");
             }
-            if (msg==='syncon')
+            if (msg==='refreshon')
             {
                 props = await sget(null)
                 alarms.create('refreshToken', { periodInMinutes: parseInt(props.refresh_interval) });

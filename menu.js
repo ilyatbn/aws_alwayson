@@ -44,7 +44,6 @@ document.addEventListener('DOMContentLoaded', function() {
         class:"switch btncls"
       }).appendTo(`#item${i}`);
   
-      
       jQuery('<input>', {
         type: "checkbox",
         id: `enable${i}`,
@@ -55,10 +54,9 @@ document.addEventListener('DOMContentLoaded', function() {
         class:"slider round"
       }).appendTo(`#label${i}`);
     }
+    //center the options button
     let height = $(document).height() / 2
     $(".options_btn").css("margin-top",height - 25);
-
-
     //get the currently checked checkbox
     chrome.storage.local.get(['checked'], function(result) {
       if (typeof result.checked !== 'undefined') {
@@ -71,7 +69,6 @@ document.addEventListener('DOMContentLoaded', function() {
         })
       };
     });
-
     //populate the textboxes from local storage
     $("input[id^='role']").each(function(){
       let id = $(this).attr("id")
@@ -82,14 +79,12 @@ document.addEventListener('DOMContentLoaded', function() {
         };
       });
     });  
-    
-      
     //uncheck all checkboxes when modifying role ARNs
     $("input[id^='role']").focus(function() {
       $("input[id^='enable'][type='checkbox']").each(function(index, obj){
         $(this).prop("checked", false);
       });
-      port.postMessage('syncoff');
+      port.postMessage('refreshoff');
     });
     //Save data to local storage automatically when not focusing on TxtBox
     $("input[id^='role']").focusout(function() {
@@ -100,12 +95,9 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       sset(obj);
     });
-
     //get the STS token from storage when clicking the CLI button.
     $('[id^="sts_button"]').click(function() {
       let index = $(this).attr("data-index")
-      console.log(`index ${index}`)
-      console.log($(`#enable${index}`).prop("checked"))
       if ($(`#enable${index}`).prop("checked")){
         chrome.storage.local.get(['aws_sts_token'], function(result) {
           navigator.clipboard.writeText(result.aws_sts_token).then(() => {
@@ -116,13 +108,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
       }
     });
-  
     //When a checkbox is changed
     $("input[id^='enable'][type='checkbox']").change(function() {
       let id = $(this).attr("id")
       let dataIndex = $(this).attr("data-index")
       if(!this.checked){
-        port.postMessage('syncoff');
+        port.postMessage('refreshoff');
       }
       else {
         //uncheck other checkboxes.
@@ -137,12 +128,11 @@ document.addEventListener('DOMContentLoaded', function() {
             sset({'checked':$(this).attr("id")});
           }
         })
-        
-        port.postMessage("syncon");
+        //start background service functions
+        port.postMessage("refreshon");
         port.onMessage.addListener(function(msg) {
-          console.log("Message received from background:" + msg);
+          console.log("Service worker response:" + msg);
         });  
-
       }
     })
   })
