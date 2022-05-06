@@ -1,4 +1,4 @@
-import { sget, sset }  from './storageapi.js';
+import { sset }  from './storageapi.js';
 
 document.querySelector('#go-to-options').addEventListener('click', function() {
   if (chrome.runtime.openOptionsPage) {
@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   //create divs under grid-container
   chrome.storage.local.get(['roleCount'], function(result) {
+    if(result.roleCount===undefined){
+      $('#go-to-options').click()
+    }
     for (let i = 0; i < parseInt(result.roleCount); i++) {
       jQuery('<div>', {
         id: `item${i}`,
