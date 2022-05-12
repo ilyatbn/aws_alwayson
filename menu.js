@@ -66,7 +66,12 @@ document.addEventListener('DOMContentLoaded', function() {
           if($(this).attr("data-index")==dataIndex){
             $(this).prop("checked", true);
           }
-        })
+        });
+        //enabled the relevant sts button if something is already checked.
+        $("[id^='sts_button']").each(function(){
+          if($(this).attr("data-index")==dataIndex){
+            $(this).css("visibility","visible");
+          }});
       };
     });
     //populate the textboxes from local storage
@@ -131,7 +136,19 @@ document.addEventListener('DOMContentLoaded', function() {
         //start background service functions
         port.postMessage("refreshon");
         port.onMessage.addListener(function(msg) {
-          console.log("Service worker response:" + msg);
+          //if sts fetch went fint enable the cli button.
+          if(msg=='sts_ready') {
+            $("[id^='sts_button']").each(function(){
+              if($(this).attr("data-index")==dataIndex){
+                $(this).css("visibility","visible");
+              } else {
+                $(this).css("visibility","hidden");
+              }
+            })
+          } else {
+            console.log("Service worker response:" + msg);
+          }
+
         });  
       }
     })

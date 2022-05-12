@@ -1,5 +1,5 @@
 
-import { sget, sset }  from './storageapi.js';
+import { sset }  from './storageapi.js';
 
 const samlRegex = /name="SAMLResponse" value="([\s\S]+?)"/i;
 const accountSelectionRegex = `tabindex="\\d" jsname="\\S\*" data-authuser="(\\d)" data-identifier="(\\S\*@DOMAIN)"`;
@@ -10,8 +10,17 @@ const awsStsUrl = 'https://sts.amazonaws.com'
 const arnPrefix = 'arn:aws:iam::'
 const googleSsoUrl = 'https://accounts.google.com/o/saml2/initsso?idpid=IDPID&spid=SPID&forceauthn=false&authuser='
 
-var alarms = chrome.alarms;
-var props,role
+chrome.runtime.onStartup.addListener(function() {
+    chrome.storage.local.get(null, function(props) {
+        refreshAwsTokensInit(props);
+    })
+})
+
+chrome.alarms.onAlarm.addListener(function( alarm ) {
+    chrome.storage.local.get(null, function(props) {
+        refreshAwsTokensInit(props);
+    })
+});
 
 async function main() {
     chrome.runtime.onConnect.addListener(function(port) {
@@ -20,27 +29,23 @@ async function main() {
             if (msg==='refreshoff'){
                 console.log('turning off background refresh');
                 sset({'checked':'0'});
-                alarms.clear("refreshToken");
-                alarms.onAlarm.removeListener(refreshAwsTokensInit);
+                chrome.alarms.clear("refreshToken");
                 port.postMessage("OK");
             }
             if (msg==='refreshon')
             {
-                props = await sget(null)
-                alarms.create('refreshToken', { periodInMinutes: parseInt(props.refresh_interval) });
-                
-                chrome.alarms.onAlarm.addListener(function( alarm ) {
-                    refreshAwsTokensInit();
-                });
-                refreshAwsTokensInit();
+                chrome.storage.local.get(null, function(props) {
+                    chrome.alarms.create('refreshToken', { periodInMinutes: parseInt(props.refresh_interval) });
+                    refreshAwsTokensInit(props, port);
+                })
+
             }
         });
     });    
 }
 main()
 
-
-  function refreshAwsTokensInit(){
+function refreshAwsTokensInit(props, port=null){
     fetch(googleAccountChooserUrl).then(response=> {
         response.text().then(accounts=> {
             var re = new RegExp(accountSelectionRegex.replace("DOMAIN",props.organization_domain),"i");
@@ -49,7 +54,7 @@ main()
             fetch(`${googleSsoUrl.replace('IDPID',props.google_idpid).replace('SPID',props.google_spid)}${accountIndex}`).then(response => {   
                 response.text().then(result => {
                     let SAMLReponse=result.match(samlRegex)[1]
-                    role = props[props.checked]
+                    let role = props[props.checked]
                     let roleArn=arnPrefix+role
                     let awsAccount=(roleArn.split(":"))[4]
                     let principalArn=`${arnPrefix}${awsAccount}:saml-provider/gsuite`
@@ -106,7 +111,8 @@ main()
                               stsToken = `export AWS_ACCESS_KEY_ID=${accessKeyId} AWS_SECRET_ACCESS_KEY=${secretAccessKey} AWS_SESSION_TOKEN=${sessionToken} AWS_SESSION_EXPIRATION=${sessionExpiration}`
                           }
                           
-                        sset({'aws_sts_token':stsToken})
+                        sset({'aws_sts_token':stsToken});
+                        if (port) port.postMessage('sts_ready');
                     }).catch((error) => {
                         console.error('Error:', error);
                     });
@@ -114,6 +120,6 @@ main()
             });
         });
     });
-  };
+};
 
 

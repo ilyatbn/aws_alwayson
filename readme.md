@@ -6,6 +6,13 @@ This extension can be used as an alternative to `aws-google-auth` and doesn't re
 - Get temporary credentials for assumed role to use for CLI access.
 
 ## Installation
+
+### Option 1
+The extension is available in the Chrome Web Store and can be installed directly:  
+
+<a href="https://chrome.google.com/webstore/detail/aws-alwayson/lfplgkokagjgodoeojaodphmjdhlpega" target="_blank" rel="noopener noreferrer"><img src="https://raw.githubusercontent.com/ilyatbn/aws_alwayson/master/img/chrome.png" width="48" /></a>
+
+### Option 2
 Clone this repository.  
 Go to the Chrome Extensions page.  
 Enable Developer Mode on the right side of the page.  
@@ -30,4 +37,4 @@ Tested and working on:
 Chrome 101  
 Brave 1.38.111   
 ## To Do:  
-Nothing..
+make the IAM role session timeout fallback to 3600 if configured more than maximum allowed.

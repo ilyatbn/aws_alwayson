@@ -96,6 +96,7 @@ body {
     font-size: 12px;
     margin: 6px;
     border-radius: 60%;
+    visibility: hidden;
   }
 
   .options_btn{
