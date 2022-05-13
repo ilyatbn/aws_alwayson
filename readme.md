@@ -37,4 +37,16 @@ Tested and working on:
 Chrome 101  
 Brave 1.38.111   
 ## To Do:  
-make the IAM role session timeout fallback to 3600 if configured more than maximum allowed.
+- add "settings are managed by an administrator" checkbox. 
+    if true;
+        hide all the regular options.
+        add new option called "management server url"
+        on save, add additional permission to fetch from management_server (once?).
+        fetch settings from server(streaming connection?) and update local settings.
+        add option to disable the toggle for management server url(make the options one-way).
+    create a golang microservice that gets a request and responds with parameters(pass email).
+    https://developers.google.com/admin-sdk/directory/v1/guides/manage-users
+    create roll mapping (group(in gsuite)-role(manual/get from gsuite with api key?))
+- make the IAM role session timeout fallback to 3600 if configured more than maximum allowed.
+- Check if user is logged in to gmail when clicked on toggle. set back to off if logged out
+https://groups.google.com/?authuser=1
