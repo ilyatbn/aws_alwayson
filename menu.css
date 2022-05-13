@@ -91,20 +91,27 @@ body {
   }
 
   .clibtn {
-    text-align: center;
-    text-decoration: none;
-    font-size: 12px;
+    background-size: 26px;
     margin: 6px;
-    border-radius: 60%;
     visibility: hidden;
+    background-image: url(/img/cli.png); 
+    border: 1px solid #ddd;
+    border: none;
+    border-radius: 3px;
+    height: 26px; 
+    width: 26px; 
   }
 
   .options_btn{
     background: url(/img/options.png); 
     width: 24px; 
     height: 24px; 
-    border: none; 
+    border: none;
     float: right;
     position: relative;
     margin: 50px 0px 0px 5px;
+  }
+
+  .clibtn:hover {
+    box-shadow: 0 0 2px 1px #ff5400;
   }

@@ -53,15 +53,19 @@ v0.8.0.1
 - split css files for menu and options.  
 ___  
 v1.0.0  
-- Added OS detection to set different cli environment variable set command on windows. 
+- Added OS detection to set different cli environment variable set command on windows.  
 - Made sure you can only get the cli credentials if you press the right cli button.  
 ___
 
 v1.0.1  
-- Added small check if the roleCount is undefined, to jump to Options page, assuming user has not configured it yet.
+- Added small check if the roleCount is undefined, to jump to Options page, assuming user has not configured it yet.  
 ___
 v1.0.2
-- Fixed alarms not firing correctly.
-- Added token refresh on browser start.
-- Made the cli button visible only for the selected role.
-- Made the cli button visible only after STS credentials are available.
+- Fixed alarms not firing correctly.  
+- Added token refresh on browser start.  
+- Made the cli button visible only for the selected role.  
+- Made the cli button visible only after STS credentials are available.  
+___
+v1.0.3
+- Added some error handling.  
+- Added some progress handling for buttons.  

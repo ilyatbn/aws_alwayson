@@ -35,8 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
       jQuery('<button>', {
         class:"button clibtn",
         id: `sts_button${i}`,
-        "data-index": i,
-        text: "cli"
+        "data-index": i
       }).appendTo(`#item${i}`);
       
       jQuery('<label>', {
@@ -58,20 +57,23 @@ document.addEventListener('DOMContentLoaded', function() {
     let height = $(document).height() / 2
     $(".options_btn").css("margin-top",height - 25);
     //get the currently checked checkbox
-    chrome.storage.local.get(['checked'], function(result) {
+    chrome.storage.local.get(['checked','last_msg'], function(result) {
       if (typeof result.checked !== 'undefined') {
         let dataIndex = $(`#${result.checked}`).attr("data-index");
         //find the checkbox with the same data-index as the role and set it as checked.
-        $("input[id^='enable'][type='checkbox']").each(function(){
-          if($(this).attr("data-index")==dataIndex){
+        $(`input[id^='enable'][type='checkbox'][data-index=${dataIndex}]`).each(function(){
             $(this).prop("checked", true);
-          }
         });
         //enabled the relevant sts button if something is already checked.
-        $("[id^='sts_button']").each(function(){
-          if($(this).attr("data-index")==dataIndex){
-            $(this).css("visibility","visible");
-          }});
+        $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function(){
+            if(result.last_msg.includes('err')){
+              $(this).css("background-image","url(/img/err.png)");
+              $(this).css("visibility","visible");
+              $(this).css("pointer-events","none");
+            } else {
+              $(this).css("visibility","visible");
+            }
+        });
       };
     });
     //populate the textboxes from local storage
@@ -117,6 +119,11 @@ document.addEventListener('DOMContentLoaded', function() {
     $("input[id^='enable'][type='checkbox']").change(function() {
       let id = $(this).attr("id")
       let dataIndex = $(this).attr("data-index")
+      // hide all sts buttons
+      $("[id^='sts_button']").each(function(){
+          $(this).css("visibility","hidden");
+      })
+
       if(!this.checked){
         port.postMessage('refreshoff');
       }
@@ -127,25 +134,31 @@ document.addEventListener('DOMContentLoaded', function() {
             $(this).prop("checked", false)
           }
         })
-        //find the roleTxtBox with the same data-index as the checkbox and set it's id as checked.
-        $("input[id^='role']").each(function(){
-          if($(this).attr("data-index")==dataIndex){
+        //enable sts loading button
+        $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function(){
+          $(this).css("background-image","url(/img/loading.gif)");
+          $(this).css("visibility","visible");
+          $(this).css("pointer-events","none");
+        })
+        //set the roleTxtBox with the same data-index as the as checked.
+        $(`input[id^='role'][data-index=${dataIndex}]`).each(function(){
             sset({'checked':$(this).attr("id")});
-          }
         })
         //start background service functions
         port.postMessage("refreshon");
         port.onMessage.addListener(function(msg) {
           //if sts fetch went fint enable the cli button.
           if(msg=='sts_ready') {
-            $("[id^='sts_button']").each(function(){
-              if($(this).attr("data-index")==dataIndex){
-                $(this).css("visibility","visible");
-              } else {
-                $(this).css("visibility","hidden");
-              }
+            $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function(){
+              $(this).css("background-image","url(/img/cli.png)");
+              $(this).css("pointer-events","");
             })
-          } else {
+          } else if (msg.includes('err')) {
+            $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function(){
+              $(this).css("background-image","url(/img/err.png)");
+            })            
+          }
+          else {
             console.log("Service worker response:" + msg);
           }
 
