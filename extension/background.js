@@ -1,9 +1,10 @@
 
 import { sset }  from './storageapi.js';
 
-const samlRegex = /name="SAMLResponse" value="([\s\S]+?)"/i;
+const googleSsoRegex = /name="SAMLResponse" value="([\s\S]+?)"/i;
 const accountSelectionRegex = `tabindex="\\d" jsname="\\S\*" data-authuser="(\\d)" data-identifier="(\\S\*@DOMAIN)"`;
 const stsTokenRegex = /<AccessKeyId>(\S+)<.*\n.*<SecretAccessKey>(\S+)<.*\n.*<SessionToken>(\S+)<.*\n.*<Expiration>(\S+)</i
+const samlFetchErrorRegex = /var problems = {"main": "([\S\s]+)"};/i
 const googleAccountChooserUrl = 'https://accounts.google.com/AccountChooser'
 const awsSamlUrl = 'https://signin.aws.amazon.com/saml'
 const awsStsUrl = 'https://sts.amazonaws.com'
@@ -53,12 +54,12 @@ function refreshAwsTokensInit(props, port=null){
             let accountIndex = accounts.match(re)[1]
             fetch(`${googleSsoUrl.replace('IDPID',props.google_idpid).replace('SPID',props.google_spid)}${accountIndex}`).then(response => {   
                 response.text().then(result => {
-                    let SAMLReponse=result.match(samlRegex)[1]
+                    let SAMLReponse=result.match(googleSsoRegex)[1]                    
                     let role = props[props.checked]
                     let roleArn=arnPrefix+role
                     let awsAccount=(roleArn.split(":"))[4]
                     let principalArn=`${arnPrefix}${awsAccount}:saml-provider/gsuite`
-                    let data = "RelayState="+"&SAMLResponse="+encodeURIComponent(SAMLReponse)+"&name=&portal=&roleIndex="+encodeURIComponent(roleArn);
+                    let data = "RelayState=&SAMLResponse="+encodeURIComponent(SAMLReponse)+"&name=&portal=&roleIndex="+encodeURIComponent(roleArn);
                     fetch(awsSamlUrl, {
                         method: "POST",
                         body: data,
@@ -76,15 +77,16 @@ function refreshAwsTokensInit(props, port=null){
                             "Accept-Language": "en-US,en;q=0.9"
                         }
                     }).then(response => response.text())
-                    .then((body) => {
-                        if(body.includes('Invalid selection')){
-                            console.error('Error in saml fetech:', error);
+                    .then((response) => {
+                        let errorCheck=response.match(samlFetchErrorRegex)
+                        if (errorCheck){
+                            console.error('Error in saml fetech:', errorCheck[1]);
                             sset({'last_msg':'saml_err'});
                             if (port) port.postMessage('saml_err');
-                        } else{
-                        let date = new Date().toLocaleString();
-                        console.log(`AWS AlwaysON refreshed tokens successfuly at ${date}`);
-                        fetchSts(roleArn, principalArn,SAMLReponse, props, port)
+                        } else {
+                            let date = new Date().toLocaleString();
+                            console.log(`AWS AlwaysON refreshed tokens successfuly at ${date}`);
+                            fetchSts(roleArn, principalArn,SAMLReponse, props, port)
                         }
                     });
                 }).catch((error) => {
