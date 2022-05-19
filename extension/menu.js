@@ -1,4 +1,4 @@
-import { sset }  from './storageapi.js';
+const storage = chrome.storage.local
 
 document.querySelector('#go-to-options').addEventListener('click', function() {
   if (chrome.runtime.openOptionsPage) {
@@ -9,15 +9,16 @@ document.querySelector('#go-to-options').addEventListener('click', function() {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-  var port = chrome.runtime.connect({
-      name: "talk to background.js"
-  });
   //create divs under grid-container
-  chrome.storage.local.get(['roleCount'], function(result) {
-    if(result.roleCount===undefined){
-      $('#go-to-options').click()
+  storage.get(null, function(props) {
+    if(props.platform===undefined) {
+      let platform = navigator?.userAgentData?.platform || navigator?.platform || 'unknown'
+      storage.set({"platform":platform});
     }
-    for (let i = 0; i < parseInt(result.roleCount); i++) {
+    if(props.roleCount===undefined){
+      $('#go-to-options').click()
+    }    
+    for (let i = 0; i < parseInt(props.roleCount); i++) {
       jQuery('<div>', {
         id: `item${i}`,
         class: `item${i}`,
@@ -54,42 +55,43 @@ document.addEventListener('DOMContentLoaded', function() {
       }).appendTo(`#label${i}`);
     }
     //center the options button
-    let height = $(document).height() / 2
-    $(".options_btn").css("margin-top",height - 25);
+    $(window).resize(function() {
+      let height = $(document).height() / 2
+      $(".options_btn").css("margin-top",height - 25);      
+    });
     //get the currently checked checkbox
-    chrome.storage.local.get(['checked','last_msg'], function(result) {
-      if (typeof result.checked !== 'undefined') {
-        let dataIndex = $(`#${result.checked}`).attr("data-index");
-        //find the checkbox with the same data-index as the role and set it as checked.
-        $(`input[id^='enable'][type='checkbox'][data-index=${dataIndex}]`).each(function(){
-            $(this).prop("checked", true);
-        });
-        //enabled the relevant sts button if something is already checked.
-        $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function(){
-            if(result.last_msg.includes('err')){
-              $(this).css("background-image","url(/img/err.png)");
-              $(this).css("visibility","visible");
-              $(this).css("pointer-events","none");
-            } else {
-              $(this).css("visibility","visible");
-            }
+    if (typeof props.checked !== 'undefined') {
+      let dataIndex = $(`#${props.checked}`).attr("data-index");
+      //find the checkbox with the same data-index as the role and set it as checked.
+      $(`input[id^='enable'][type='checkbox'][data-index=${dataIndex}]`).each(function(){
+        $(this).prop("checked", true);
+      });
+      //enabled the relevant sts button if something is already checked.
+      $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function(){
+        if(props.last_msg.includes('err')){
+            $(this).css("background-image","url(/img/err.png)");
+            $(this).css("visibility","visible");
+            $(this).css("pointer-events","none");
+          } else {
+            $(this).css("visibility","visible");
+          }
         });
       };
-    });
-    //populate the textboxes from local storage
-    $("input[id^='role']").each(function(){
-      let id = $(this).attr("id")
-      let currentRoleTxtBox = $(this)
-      chrome.storage.local.get([id], function(result) {
-        if (typeof result[id] !== 'undefined') {
-          currentRoleTxtBox.val(result[id]);
+      //populate the textboxes from local storage
+      $("input[id^='role']").each(function(){
+        let id = $(this).attr("id")
+        let currentRoleTxtBox = $(this)
+        if (typeof props[id] !== 'undefined') {
+          currentRoleTxtBox.val(props[id]);
         };
-      });
-    });  
-    //uncheck all checkboxes when modifying role ARNs
-    $("input[id^='role']").focus(function() {
-      $("input[id^='enable'][type='checkbox']").each(function(index, obj){
+      });  
+      //uncheck all checkboxes when modifying role ARNs
+      $("input[id^='role']").focus(function() {
+        $("input[id^='enable'][type='checkbox']").each(function(index, obj){
         $(this).prop("checked", false);
+      });
+      let port = chrome.runtime.connect({
+        name: "talk to background.js"
       });
       port.postMessage('refreshoff');
     });
@@ -100,14 +102,14 @@ document.addEventListener('DOMContentLoaded', function() {
       let obj ={
         [roleName]:roleValue
       }
-      sset(obj);
+      storage.set(obj);
     });
     //get the STS token from storage when clicking the CLI button.
     $('[id^="sts_button"]').click(function() {
       let index = $(this).attr("data-index")
       if ($(`#enable${index}`).prop("checked")){
-        chrome.storage.local.get(['aws_sts_token'], function(result) {
-          navigator.clipboard.writeText(result.aws_sts_token).then(() => {
+        storage.get(['aws_sts_token'], function(data) {
+          navigator.clipboard.writeText(data.aws_sts_token).then(() => {
             alert("token copied to clipboard");
           }, () => {
             alert("failed copying to clipboard");
@@ -117,18 +119,21 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     //When a checkbox is changed
     $("input[id^='enable'][type='checkbox']").change(function() {
+      let port = chrome.runtime.connect({
+        name: "talk to background.js"
+      });
       let id = $(this).attr("id")
       let dataIndex = $(this).attr("data-index")
       // hide all sts buttons
       $("[id^='sts_button']").each(function(){
           $(this).css("visibility","hidden");
-      })
-
-      if(!this.checked){
-        port.postMessage('refreshoff');
-      }
-      else {
-        //uncheck other checkboxes.
+        })
+        
+        if(!this.checked){
+          port.postMessage('refreshoff');
+        }
+        else {
+          //uncheck other checkboxes.
         $("input[id^='enable'][type='checkbox']").each(function(){
           if($(this).attr("id")!=id){
             $(this).prop("checked", false)
@@ -142,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         //set the roleTxtBox with the same data-index as the as checked.
         $(`input[id^='role'][data-index=${dataIndex}]`).each(function(){
-            sset({'checked':$(this).attr("id")});
+            storage.set({'checked':$(this).attr("id")});
         })
         //start background service functions
         port.postMessage("refreshon");

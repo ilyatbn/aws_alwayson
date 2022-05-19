@@ -69,3 +69,13 @@ ___
 v1.0.3
 - Added some error handling.  
 - Added some progress handling for buttons.  
+___
+v1.0.4
+- Got rid of storageapi.js and import to make the addon Firefox compatible (Sort of. Still using chrome API.)
+- Added manifest-firefox.json which still works only with V2 extensions.
+- Added even more error handling.
+- Probably fixed a sporadic issue where an error icon is shown on menu open even though everything worked fine. This was probably due to the user closing the menu window before the refresh procedure finishing. 
+- Moved platform check to run once instead of each time you get temporary credentials.
+- Made platform modifiable in options.
+- Reduced amount of times accessing local storage in menu. Might improve performance a little.  
+- Fixed an issue where the options button wasn't centered.

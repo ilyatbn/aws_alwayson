@@ -5,13 +5,15 @@ function save_options() {
     var refreshInterval = document.getElementById('refresh_interval').value;
     var sessionDuration = document.getElementById('session_duration').value;
     var roleCount = document.getElementById('roleCount').value;
+    var platform = document.getElementById('platform').value;
     chrome.storage.local.set({
         organization_domain: orgDomain,
         google_spid: spid,
         google_idpid: idpid,
         refresh_interval: refreshInterval,
         session_duration: sessionDuration,
-        roleCount: roleCount
+        roleCount: roleCount,
+        platform: platform
     }, function() {
       var status = document.getElementById('status');
       status.textContent = 'Saved.';
@@ -28,7 +30,8 @@ function restore_options() {
         google_idpid: '',
         refresh_interval: 59,
         session_duration: 3600,
-        roleCount:1
+        roleCount:1,
+        platform
     }, function(opt) {
         document.getElementById('organization_domain').value = opt.organization_domain;
         document.getElementById('google_spid').value = opt.google_spid;
@@ -36,6 +39,7 @@ function restore_options() {
         document.getElementById('refresh_interval').value = opt.refresh_interval;
         document.getElementById('session_duration').value = opt.session_duration;
         document.getElementById('roleCount').value = opt.roleCount;
+        document.getElementById('platform').value = opt.platform;
     });
 }
 //display help information
