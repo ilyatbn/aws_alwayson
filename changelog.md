@@ -21,7 +21,7 @@ v0.4.2
 - fixed session expiration misspelled env var.
 ___     
 v0.5.0   
-- added multiple gmail account support.  
+- added multiple Google account support.  
 ___   
 v0.6.0   
 - added options menu.
@@ -79,3 +79,9 @@ v1.0.4
 - Made platform modifiable in options.
 - Reduced amount of times accessing local storage in menu. Might improve performance a little.  
 - Fixed an issue where the options button wasn't centered.
+___
+v1.1.0
+- Wrote a better error handler.
+- Added option to geet role names automatically.
+- Had to modify lots of stuff so, major version.
+___

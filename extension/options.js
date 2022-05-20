@@ -22,6 +22,11 @@ function save_options() {
       }, 2000);
     });
   }
+
+function getPlatform(){
+    let platform = navigator?.userAgentData?.platform || navigator?.platform || 'unknown'
+    return platform
+}
   
 function restore_options() {
     chrome.storage.local.get({
@@ -31,7 +36,7 @@ function restore_options() {
         refresh_interval: 59,
         session_duration: 3600,
         roleCount:1,
-        platform
+        platform: getPlatform()
     }, function(opt) {
         document.getElementById('organization_domain').value = opt.organization_domain;
         document.getElementById('google_spid').value = opt.google_spid;

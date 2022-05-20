@@ -1,7 +1,7 @@
 
 
 body {
-  background-color: rgba(199, 199, 199, 0.8);
+  background-color: rgba(199, 199, 199, 1.0);
 }
 .grid-container {
     display: grid;
@@ -109,7 +109,20 @@ body {
     border: none;
     float: right;
     position: relative;
-    margin: 50px 0px 0px 5px;
+    margin: 50px 0px 0px 2px;
+  }
+
+  .autofill_btn{
+    background: url(/img/auto.png); 
+    background-size: 30px;
+    background-color: #4d4d4d;
+    width: 30px; 
+    height: 30px; 
+    border: none;
+    float: right;
+    position: relative;
+    margin: 50px -29px 0px 5px;
+    --enabled: 0
   }
 
   .clibtn:hover {
