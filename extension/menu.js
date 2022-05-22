@@ -178,6 +178,7 @@ async function main(){
   });
   //Action when a checkbox is changed
   $("input[id^='enable'][type='checkbox']").change(function() {
+    $("#msg").text("");
     let id = $(this).attr("id")
     let dataIndex = $(this).attr("data-index")
     // hide all sts buttons
@@ -189,7 +190,6 @@ async function main(){
           name: "talk to background.js"
         });         
         port.postMessage('refreshoff');
-        $("#msg").text("");
     }
     else {
       //uncheck other checkboxes.

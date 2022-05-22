@@ -1,5 +1,5 @@
 const googleSsoRegex = /name="SAMLResponse" value="([\s\S]+?)"/i;
-const accountSelectionRegex = `tabindex="\\d" jsname="\\S\*" data-authuser="(\\d)" data-identifier="(\\S\*@DOMAIN)"`;
+const accountSelectionRegex = `tabindex="\\d" jsname="\\S\*" data-authuser="(-?\\d)" data-identifier="(\\S\*@DOMAIN)"`;
 const stsTokenRegex = /<AccessKeyId>(\S+)<.*\n.*<SecretAccessKey>(\S+)<.*\n.*<SessionToken>(\S+)<.*\n.*<Expiration>(\S+)</i
 const samlFetchErrorRegex = /var problems = {"main": "([\S\s]+)"};/i
 const roleParseRegex = /id="arn:aws:iam::([\S]+)"/
@@ -127,7 +127,7 @@ function refreshAwsTokensAndStsCredentials(props,port,samlResponse){
         let errorCheck=response.match(samlFetchErrorRegex)
         if (errorCheck){
             let msg = `SAML fetch reponse returned error: ${errorCheck[1]}`
-            errHandler(port, msg)
+            throw msg
         } else {
             let date = new Date().toLocaleString();
             console.log(`AWS AlwaysON refreshed tokens successfuly at ${date}`);
@@ -150,7 +150,7 @@ function refreshAwsRoles(port,samlResponse){
         let errorCheck=response.match(samlFetchErrorRegex)
         if (errorCheck){
             let msg = `SAML fetch reponse returned error: ${errorCheck[1]}`
-            errHandler(port, msg)
+            throw msg
         } else {
             let i=0
             const parseGlobal = RegExp(roleParseRegex, 'g');
@@ -161,7 +161,6 @@ function refreshAwsRoles(port,samlResponse){
             }
             storage.set({'roleCount': i})
             if (port) port.postMessage('roles_refreshed')
-
         }
     }).catch((error) => {
         let msg = `Error in SAML fetch:${error}`
@@ -176,10 +175,14 @@ function awsInit(props, port=null, jobType='refresh'){
             let accountData = accounts.match(re)
             if(accountData===null){
                 let msg = `Organization domain not found. Please check that you have a Google Account with that domain name logged in.`
-                errHandler(port, msg)
+                throw msg
+            }
+            let accountIndex = accountData[1]
+            if(accountIndex==-1){
+                let msg = `${accountData[2]} is not logged in. Please login and try again.`
+                throw msg
             }
             console.log(`Refreshing credentials for ${accountData[2]}`)
-            let accountIndex = accountData[1]
             fetch(`${googleSsoUrl.replace('IDPID',props.google_idpid).replace('SPID',props.google_spid)}${accountIndex}`).then(response => {   
                 response.text().then(result => {
                     let samlResponse=result.match(googleSsoRegex)[1]
