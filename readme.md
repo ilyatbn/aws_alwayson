@@ -54,8 +54,6 @@ Firefox - v100
 - (Edge) Options UI is smaller than the elements.  
 - (Opera) Options UI opens in a full tab.  
 ## To Do:  
-- (high) Remove Save button from options and make it autosave like the menu.
-- (high) Add error description when hovering above error sign.  
 - (high) Throw error immediately if user is signed out of his Google account(alert?)  
 - (medium) Make the IAM role session timeout fallback to 3600 if configured more than maximum allowed.  
 - (low) Add 2nd tier role assumption (using https://signin.aws.amazon.com/switchrole)  

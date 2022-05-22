@@ -85,3 +85,6 @@ v1.1.0
 - Added option to geet role names automatically.
 - Had to modify lots of stuff so, major version.
 ___
+v1.1.1
+- Added error message in UI.
+- Refactored the options javascript to support dynamic menu building. 
