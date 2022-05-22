@@ -39,6 +39,7 @@ function populateCheckboxesAndButtons(props){
           $(this).css("background-image","url(/img/err.png)");
           $(this).css("visibility","visible");
           $(this).css("pointer-events","none");
+          $("#msg").text(props.last_msg_detail);
         } else {
           $(this).css("visibility","visible");
         }
@@ -111,6 +112,9 @@ async function main(){
     $('#go-to-options').click()
   }
   buildMenu(props)
+  $("#clibtn").hover(function () {
+    alert($(this).prop("title")); 
+  });
   //interation with autofill btn.
   $('#autofill_btn').click(function() {
     if($(this).css("--enabled") == 0){   
@@ -126,6 +130,9 @@ async function main(){
         } else if (msg.includes('err')) {
           $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function(){
             $(this).css("background-image","url(/img/err.png)");
+            storage.get(['last_msg_detail'], function(result){
+              $("#msg").text(result.last_msg_detail);
+            })
           })            
         } else {
           console.log("Service worker response:" + msg);
@@ -182,6 +189,7 @@ async function main(){
           name: "talk to background.js"
         });         
         port.postMessage('refreshoff');
+        $("#msg").text("");
     }
     else {
       //uncheck other checkboxes.
@@ -210,12 +218,16 @@ async function main(){
         if(msg=='sts_ready') {
           $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function(){
             $(this).css("background-image","url(/img/cli.png)");
+            $(this).prop("title","Click to copy STS credentials to clipboard.")
             $(this).css("pointer-events","");
           })
         } else if (msg.includes('err')) {
           $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function(){
             $(this).css("background-image","url(/img/err.png)");
-          })            
+            storage.get(['last_msg_detail'], function(result){
+              $("#msg").text(result.last_msg_detail);
+            })            
+          })
         }
         else {
           console.log("Service worker response:" + msg);
