@@ -19,15 +19,10 @@ $(".txtbox").focusout(function() {
   }
   storage.set(obj);
 });
-
-function getPlatform(){
-    let platform = navigator?.userAgentData?.platform || navigator?.platform || 'unknown'
-    return platform
-}
-  
+ 
 function loadOptions() {
-  storage.get({organization_domain: '', google_spid: '', google_idpid: '', refresh_interval: 59, 
-    session_duration: 3600, roleCount: 1, platform: getPlatform()}, function(props) {
+  storage.get({organization_domain, google_spid, google_idpid, refresh_interval, 
+    session_duration, roleCount, platform}, function(props) {
       $(".txtbox").each(function() {
         $(this).val(props[$(this).prop("id")])
       })

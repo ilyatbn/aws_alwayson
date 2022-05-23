@@ -18,7 +18,6 @@ document.querySelector('#go-to-options').addEventListener('click', function() {
   }
 });
 
-
 function handleTextboxes(props){
   //populate the textboxes from local storage
   $("input[id^='role']").each(function(){
@@ -112,13 +111,20 @@ async function buildMenu(props){
     let height_bottom = Math.round($(document).height() * 0.67)
     let height_top = Math.round($(document).height() * 0.33)
     $(".options_btn").css("margin-top",height_bottom - 20);      
-    $(".autofill_btn").css("margin-top",height_top - 20);      
+    $(".autofill_btn").css("margin-top",height_top - 24);      
   });
 }
 
+function getPlatform(){
+  let platform = navigator?.userAgentData?.platform || navigator?.platform || 'unknown'
+  return platform
+}
 async function main(){
   let props = await storage.get(null)
+  //first run
   if(props.roleCount===undefined){
+  storage.set({organization_domain: '', google_spid: '', google_idpid: '', refresh_interval: 59, 
+  session_duration: 3600, roleCount: 1, platform: getPlatform()})    
     $('#go-to-options').click()
   }
   buildMenu(props)

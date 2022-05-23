@@ -114,10 +114,10 @@ body {
 
   .autofill_btn{
     background: url(/img/auto.png); 
-    background-size: 30px;
+    background-size: 29px;
     background-color: #4d4d4d;
-    width: 30px; 
-    height: 30px; 
+    width: 29px; 
+    height: 29px; 
     border: none;
     float: right;
     position: relative;
