@@ -1,6 +1,6 @@
 const googleSsoRegex = /name="SAMLResponse" value="([\s\S]+?)"/i;
 const accountSelectionRegex = `tabindex="\\d" jsname="\\S\*" data-authuser="(-?\\d)" data-identifier="(\\S\*@DOMAIN)"`;
-const stsTokenRegex = /<AccessKeyId>(\S+)<.*\n.*<SecretAccessKey>(\S+)<.*\n.*<SessionToken>(\S+)<.*\n.*<Expiration>(\S+)</i
+const stsTokenRegex = /<AccessKeyId>(\S+)<\/|<SecretAccessKey>(\S+)<\/|<SessionToken>(\S+)<\/|<Expiration>(\S+)<\//i
 const samlFetchErrorRegex = /var problems = {"main": "([\S\s]+)"};/i
 const roleParseRegex = /id="arn:aws:iam::([\S]+)"/
 const googleAccountChooserUrl = 'https://accounts.google.com/AccountChooser'
