@@ -138,11 +138,8 @@ async function main(){
         if (msg=='roles_refreshed'){
           location.reload();
         } else if (msg.includes('err')) {
-          $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function(){
-            $(this).css("background-image","url(/img/err.png)");
-            storage.get(['last_msg_detail'], function(result){
-              $("#msg").text(result.last_msg_detail);
-            })
+          storage.get(['last_msg_detail'], function(result){
+            $("#msg").text(result.last_msg_detail);
           })            
         } else {
           console.log("Service worker response:" + msg);
