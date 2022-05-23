@@ -87,4 +87,10 @@ v1.1.0
 ___
 v1.1.1
 - Added error message in UI.
-- Refactored the options javascript to support dynamic menu building. 
+- Refactored the options javascript to support dynamic menu building.
+- Added account logged out detection.
+- Browser API now determined differently to better support Firefox.
+- Fixed issue with autofill errors.
+- Fixed first run params not setting after removing options to autosave on focusout.
+- Fixed icon poistioning.
+- Fixed STS regex to support any XML format. 

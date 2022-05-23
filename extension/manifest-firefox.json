@@ -3,7 +3,7 @@
 
   "name": "AWS AlwaysON",
   "description": "Stay logged in to AWS console and get STS credentials for CLI access.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "browser_action": {
    "default_popup": "menu.html"
   },
