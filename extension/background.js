@@ -8,7 +8,6 @@ const awsSamlUrl = 'https://signin.aws.amazon.com/saml'
 const awsStsUrl = 'https://sts.amazonaws.com'
 const arnPrefix = 'arn:aws:iam::'
 const googleSsoUrl = 'https://accounts.google.com/o/saml2/initsso?idpid=IDPID&spid=SPID&forceauthn=false&authuser='
-const storage = chrome.storage.local
 const requestHeaders = {
     "Upgrade-Insecure-Requests": "1",
     "Cache-Control": "max-age=0",
@@ -21,6 +20,18 @@ const requestHeaders = {
     "Sec-Fetch-Dest": "document",
     "Accept-Encoding": "gzip, deflate, br",
     "Accept-Language": "en-US,en;q=0.9"
+}
+
+const storage = getApi().storage.local
+
+function getApi() {
+  if (typeof chrome !== "undefined") {
+    if (typeof browser !== "undefined") {
+      return browser;
+    } else {
+      return chrome;
+    }
+  }
 }
 
 class portWithExceptions {
@@ -47,7 +58,7 @@ class portWithExceptions {
     }
 }
 
-chrome.runtime.onStartup.addListener(function() {
+getApi().runtime.onStartup.addListener(function() {
     storage.get(null, function(props) {
         if (props['autofill']===undefined) storage.set({"autofill":0})
         if (props['autofill']==1) {
@@ -57,27 +68,27 @@ chrome.runtime.onStartup.addListener(function() {
     })
 })
 
-chrome.alarms.onAlarm.addListener(function( alarm ) {
+getApi().alarms.onAlarm.addListener(function( alarm ) {
     storage.get(null, function(props) {
         awsInit(props);
     })
 });
 
 async function main() {
-    chrome.runtime.onConnect.addListener(function(port) {
+    getApi().runtime.onConnect.addListener(function(port) {
         let portEx = new portWithExceptions(port);
         port.onMessage.addListener(async function(msg) {
             //Stop all background schedule jobs.
             if (msg==='refreshoff'){
                 storage.set({'checked':0});
-                chrome.alarms.clear("refreshToken");
+                getApi().alarms.clear("refreshToken");
             }
             //Start background role refresh
             if (msg==='refreshon')
             {
                 storage.get(null, function(props) {
                     if(confCheck(props)){
-                        chrome.alarms.create('refreshToken', { periodInMinutes: parseInt(props.refresh_interval) });
+                        getApi().alarms.create('refreshToken', { periodInMinutes: parseInt(props.refresh_interval) });
                         awsInit(props, portEx);
                     } else {
                         portEx.postError("One or more option isn't configured properly.")

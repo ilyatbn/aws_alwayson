@@ -1,4 +1,14 @@
-const storage = chrome.storage.local
+const storage = getApi().storage.local
+
+function getApi() {
+  if (typeof chrome !== "undefined") {
+    if (typeof browser !== "undefined") {
+      return browser;
+    } else {
+      return chrome;
+    }
+  }
+}
 //Save options to local storage automatically
 $(".txtbox").focusout(function() {
   console.log("focusout")
@@ -21,6 +31,7 @@ function loadOptions() {
       $(".txtbox").each(function() {
         $(this).val(props[$(this).prop("id")])
       })
+      console.log(props)
   });
 }
 //display help information

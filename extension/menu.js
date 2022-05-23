@@ -1,4 +1,14 @@
-const storage = chrome.storage.local
+const storage = getApi().storage.local
+
+function getApi() {
+  if (typeof chrome !== "undefined") {
+    if (typeof browser !== "undefined") {
+      return browser;
+    } else {
+      return chrome;
+    }
+  }
+}
 
 document.querySelector('#go-to-options').addEventListener('click', function() {
   if (chrome.runtime.openOptionsPage) {
@@ -214,7 +224,7 @@ async function main(){
       });      
       port.postMessage("refreshon");
       port.onMessage.addListener(function(msg) {
-        //if sts fetch went fint enable the cli button.
+        //if sts fetch went fine enable the cli button.
         if(msg=='sts_ready') {
           $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function(){
             $(this).css("background-image","url(/img/cli.png)");

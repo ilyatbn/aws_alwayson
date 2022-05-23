@@ -50,11 +50,9 @@ Edge  - v101
 Opera - v86  
 Firefox - v100  
 ## Known issues:  
-- (Brave) Menu takes longer than usual to open when the service worker is inactive. Does not reproduce on any other browser so I guess it's a bug in Brave.  
 - (Edge) Options UI is smaller than the elements.  
 - (Opera) Options UI opens in a full tab.  
 ## To Do:  
-- (high) Throw error immediately if user is signed out of his Google account(alert?)  
 - (medium) Make the IAM role session timeout fallback to 3600 if configured more than maximum allowed.  
 - (low) Add 2nd tier role assumption (using https://signin.aws.amazon.com/switchrole)  
 - (very_low) Build options menu dynamically like I did with the roles menu.  
