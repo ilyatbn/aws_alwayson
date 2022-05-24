@@ -1,6 +1,6 @@
 const googleSsoRegex = /name="SAMLResponse" value="([\s\S]+?)"/i;
 const accountSelectionRegex = `tabindex="\\d" jsname="\\S\*" data-authuser="(-?\\d)" data-identifier="(\\S\*@DOMAIN)"`;
-const stsTokenRegex = /<AccessKeyId>(\S+)<\/|<SecretAccessKey>(\S+)<\/|<SessionToken>(\S+)<\/|<Expiration>(\S+)<\//i
+const stsTokenRegex = /<(AccessKeyId)>(\S+)<\/|<(SecretAccessKey)>(\S+)<\/|<(SessionToken)>(\S+)<\/|<(Expiration)>(\S+)<\//i
 const samlFetchErrorRegex = /var problems = {"main": "([\S\s]+)"};/i
 const roleParseRegex = /id="arn:aws:iam::([\S]+)"/
 const googleAccountChooserUrl = 'https://accounts.google.com/AccountChooser'
@@ -228,21 +228,16 @@ function fetchSts(roleArn, principalArn, samlResponse, props, port){
         method: "GET",
         headers: requestHeaders
     }).then((response) => response.text()).then((data) => {
-        data = data.match(stsTokenRegex)
-        let accessKeyId=data[1]
-        let secretAccessKey=data[2]
-        let sessionToken=data[3]
-        let sessionExpiration=data[4]
-        let stsToken
-        switch (props.platform.toLowerCase()) {
-            case 'windows':
-            case 'win32':
-              stsToken = `set AWS_ACCESS_KEY_ID=${accessKeyId} && set AWS_SECRET_ACCESS_KEY=${secretAccessKey} && set AWS_SESSION_TOKEN=${sessionToken} && set AWS_SESSION_EXPIRATION=${sessionExpiration}`
-              break;
-            default:
-              stsToken = `export AWS_ACCESS_KEY_ID=${accessKeyId} AWS_SECRET_ACCESS_KEY=${secretAccessKey} AWS_SESSION_TOKEN=${sessionToken} AWS_SESSION_EXPIRATION=${sessionExpiration}`
+        const parseGlobal = RegExp(stsTokenRegex, 'g');
+        let matches
+        while ((matches = parseGlobal.exec(data)) !== null) {
+            matches = matches.filter(function (i) {
+                return i != null;
+            });
+            console.log(matches)
+            storage.set({[`aws${matches[1]}`] : matches[2]})
         }
-        storage.set({'aws_sts_token':stsToken,'last_msg':'success'});
+        storage.set({'last_msg':'success'});
         if (port) port.postMessage('sts_ready');
     }).catch((error) => {
         let msg = `Error getting STS credentials:${error}`

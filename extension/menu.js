@@ -180,15 +180,25 @@ async function main(){
   $('[id^="sts_button"]').click(function() {
     let index = $(this).attr("data-index")
     if ($(`#enable${index}`).prop("checked")){
-      storage.get(['aws_sts_token'], function(data) {
-        navigator.clipboard.writeText(data.aws_sts_token).then(() => {
+      storage.get(["platform","awsAccessKeyId","awsSecretAccessKey","awsSessionToken","awsExpiration"], function(data) {
+        let stsCommand
+        switch (data.platform.toLowerCase()) {
+          case 'windows':
+          case 'win32':
+              stsCommand = "set"
+              break;
+          default:
+              stsCommand = "export"
+        }
+        let stscli = `${stsCommand} AWS_ACCESS_KEY_ID=${data.awsAccessKeyId} && ${stsCommand} AWS_SECRET_ACCESS_KEY=${data.awsSecretAccessKey} && ${stsCommand} AWS_SESSION_TOKEN=${data.awsSessionToken} && ${stsCommand} AWS_SESSION_EXPIRATION=${data.awsExpiration}`
+        navigator.clipboard.writeText(stscli).then(() => {
           alert("token copied to clipboard");
         }, () => {
           alert("failed copying to clipboard");
         });
-      });
-    }
-  });
+    });
+  }
+});
   //Action when a checkbox is changed
   $("input[id^='enable'][type='checkbox']").change(function() {
     $("#msg").text("");
