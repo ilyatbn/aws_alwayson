@@ -1,46 +1,33 @@
-function save_options() {
-    var orgDomain = document.getElementById('organization_domain').value;
-    var spid = document.getElementById('google_spid').value;
-    var idpid = document.getElementById('google_idpid').value;
-    var refreshInterval = document.getElementById('refresh_interval').value;
-    var sessionDuration = document.getElementById('session_duration').value;
-    var roleCount = document.getElementById('roleCount').value;
-    var platform = document.getElementById('platform').value;
-    chrome.storage.local.set({
-        organization_domain: orgDomain,
-        google_spid: spid,
-        google_idpid: idpid,
-        refresh_interval: refreshInterval,
-        session_duration: sessionDuration,
-        roleCount: roleCount,
-        platform: platform
-    }, function() {
-      var status = document.getElementById('status');
-      status.textContent = 'Saved.';
-      setTimeout(function() {
-        status.textContent = '';
-      }, 2000);
-    });
+const storage = getApi().storage.local
+
+function getApi() {
+  if (typeof chrome !== "undefined") {
+    if (typeof browser !== "undefined") {
+      return browser;
+    } else {
+      return chrome;
+    }
   }
-  
-function restore_options() {
-    chrome.storage.local.get({
-        organization_domain: '',
-        google_spid: '',
-        google_idpid: '',
-        refresh_interval: 59,
-        session_duration: 3600,
-        roleCount:1,
-        platform
-    }, function(opt) {
-        document.getElementById('organization_domain').value = opt.organization_domain;
-        document.getElementById('google_spid').value = opt.google_spid;
-        document.getElementById('google_idpid').value = opt.google_idpid;
-        document.getElementById('refresh_interval').value = opt.refresh_interval;
-        document.getElementById('session_duration').value = opt.session_duration;
-        document.getElementById('roleCount').value = opt.roleCount;
-        document.getElementById('platform').value = opt.platform;
-    });
+}
+//Save options to local storage automatically
+$(".txtbox").focusout(function() {
+  console.log("focusout")
+  let optionName = $(this).attr("id")
+  let optionValue = $(this).val()
+  let obj ={
+    [optionName]:optionValue
+  }
+  storage.set(obj);
+});
+ 
+function loadOptions() {
+  storage.get({organization_domain, google_spid, google_idpid, refresh_interval, 
+    session_duration, roleCount, platform}, function(props) {
+      $(".txtbox").each(function() {
+        $(this).val(props[$(this).prop("id")])
+      })
+      console.log(props)
+  });
 }
 //display help information
 $("img[id^='infoPic']").hover(function () {
@@ -56,5 +43,4 @@ $("img[id^='infoPic']").hover(function () {
   $(".layout").text(''); 
 });
 
-document.addEventListener('DOMContentLoaded', restore_options);
-document.getElementById('save').addEventListener('click', save_options);
+$( document ).ready(loadOptions)

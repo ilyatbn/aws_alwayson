@@ -21,7 +21,7 @@ v0.4.2
 - fixed session expiration misspelled env var.
 ___     
 v0.5.0   
-- added multiple gmail account support.  
+- added multiple Google account support.  
 ___   
 v0.6.0   
 - added options menu.
@@ -79,3 +79,18 @@ v1.0.4
 - Made platform modifiable in options.
 - Reduced amount of times accessing local storage in menu. Might improve performance a little.  
 - Fixed an issue where the options button wasn't centered.
+___
+v1.1.0
+- Wrote a better error handler.
+- Added option to geet role names automatically.
+- Had to modify lots of stuff so, major version.
+___
+v1.1.1
+- Added error message in UI.
+- Refactored the options javascript to support dynamic menu building.
+- Added account logged out detection.
+- Browser API now determined differently to better support Firefox.
+- Fixed issue with autofill errors.
+- Fixed first run params not setting after removing options to autosave on focusout.
+- Fixed icon poistioning.
+- Fixed STS regex to support any XML format. 
