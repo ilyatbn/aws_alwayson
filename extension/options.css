@@ -42,10 +42,11 @@ div.a {
 
 
 .helpimg {
-  margin-left: 25px;
+  margin-right: 25px;
   margin-top: 6px;  
   width: 24px;
   height: 24px;
+  float: right;
 }
 
 .layout {

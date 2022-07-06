@@ -13,7 +13,7 @@ const requestHeaders = {
     "Cache-Control": "max-age=0",
     "Content-Type": "application/x-www-form-urlencoded",    
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,"+
-            "image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+    "image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
     "Sec-GPC": "1",
     "Sec-Fetch-Site": "cross-site",
     "Sec-Fetch-Mode": "navigate",
@@ -21,7 +21,6 @@ const requestHeaders = {
     "Accept-Encoding": "gzip, deflate, br",
     "Accept-Language": "en-US,en;q=0.9"
 }
-
 const storage = getApi().storage.local
 
 function getApi() {
@@ -33,7 +32,6 @@ function getApi() {
     }
   }
 }
-
 class portWithExceptions {
     constructor(port) {
         this.postMessage = function (message) {
@@ -230,13 +228,29 @@ function fetchSts(roleArn, principalArn, samlResponse, props, port){
     }).then((response) => response.text()).then((data) => {
         const parseGlobal = RegExp(stsTokenRegex, 'g');
         let matches
+        let credobj = {}
         while ((matches = parseGlobal.exec(data)) !== null) {
             matches = matches.filter(function (i) {
                 return i != null;
             });
-            console.log(matches)
             storage.set({[`aws${matches[1]}`] : matches[2]})
+            credobj[`${matches[1]}`]=matches[2]
         }
+        if (props['clientupdate']) {
+            fetch("http://localhost:31339/update", {
+                method: "POST",
+                headers: {"Content-Type":"application/json", "Accept": "application/json"},
+                body: JSON.stringify(credobj)
+            }).then((response) => response.text()).then((data) => {
+                if (data != "ok") {
+                    errHandler(port, data)
+                }
+            }).catch((error) => {
+                let msg = `Error updating local client:${error}`
+                errHandler(port, msg)
+            });
+        }
+
         storage.set({'last_msg':'success'});
         if (port) port.postMessage('sts_ready');
     }).catch((error) => {
