@@ -18,7 +18,8 @@
      "https://accounts.google.com/*",
      "https://signin.aws.amazon.com/*",
      "https://console.aws.amazon.com/*",
-     "https://sts.amazonaws.com/*"
+     "https://sts.amazonaws.com/*",
+     "http://localhost:31339/*"
     ],
      "background": {
         "service_worker": "background.js",

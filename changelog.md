@@ -94,3 +94,7 @@ v1.1.1
 - Fixed first run params not setting after removing options to autosave on focusout.
 - Fixed icon poistioning.
 - Fixed STS regex to support any XML format. 
+___
+v1.2.0
+- Added an option to enable local client update.
+- Wrote a client that receives new cli credentials and updates the aws credentials file default profile.

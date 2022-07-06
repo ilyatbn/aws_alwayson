@@ -1,0 +1,10 @@
+[Unit]
+Description=AWS AlwasyON service
+After=dbus.service
+
+[Service]
+StandardError=journal
+ExecStart=/usr/local/bin/awsaoservice
+
+[Install]
+WantedBy=default.target
