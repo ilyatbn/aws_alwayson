@@ -124,7 +124,7 @@ async function main(){
   //first run
   if(props.roleCount===undefined){
   storage.set({organization_domain: '', google_spid: '', google_idpid: '', refresh_interval: 59, 
-  session_duration: 3600, roleCount: 1, platform: getPlatform()})    
+  session_duration: 3600, roleCount: 1, clientupdate: false, platform: getPlatform()})    
     $('#go-to-options').click()
   }
   buildMenu(props)

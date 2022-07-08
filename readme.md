@@ -7,6 +7,7 @@ The extension was developed for Chrome but works mostly fine on all major browse
 ## Features
 - Refresh AWS Web Console session automatically to keep user logged in. 
 - Get temporary credentials for assumed role to use for CLI access.
+- Automatically update local aws credentials file.
 
 ## Installation
 
@@ -40,6 +41,19 @@ Now you can add your user's IAM role or roles.
 
 Click on the slider to start the token auto refresh procedure.  
 After enabling the refresh you can also click on the CLI button to get the temporary STS credentials.  
+
+### Updater Service installation
+`Only available for Linux for now.`  
+```
+cd awsaoservice
+go build
+sudo cp awsaoservice /usr/local/bin
+sudo chmod 0700 /usr/local/bin/awsaoservice
+sudo cp example.service /etc/systemd/system/awsao.service
+sudo systemctl start awsao.service
+sudo systemctl enable awsao.service
+```
+after that you can tick the checkbox in the options menu. the service will be updated each time new STS credentials are generated.
 ## Changelog:
 Full changelog is available [here](/changelog.md).  
 ## Compatibility:
@@ -53,7 +67,7 @@ Firefox - v100
 - (Edge) Options UI is smaller than the elements.  
 - (Opera) Options UI opens in a full tab.  
 ## To Do:  
-- (medium) Make the IAM role session timeout fallback to 3600 if configured more than maximum allowed.  
+- (low) Make the IAM role session timeout fallback to 3600 if configured more than maximum allowed.  
 - (low) Add 2nd tier role assumption (using https://signin.aws.amazon.com/switchrole)  
 - (very_low) Build options menu dynamically like I did with the roles menu.  
 - Central Settings Management (random thought):  
@@ -61,4 +75,4 @@ Firefox - v100
     * create a microservice that gets a request and responds with parameters(extention will pass email).   Microservice will be in the customer's datacenter for now.  
     https://developers.google.com/admin-sdk/directory/v1/guides/manage-users  
     create roll mapping (group(in gsuite)-role(manual/get from gsuite with api key?)).  
-- Preset commands
+- Preset commands (using the client)
