@@ -97,4 +97,4 @@ v1.1.1
 ___
 v1.2.0
 - Added an option to enable local client update.
-- Wrote a client that receives new cli credentials and updates the aws credentials file default profile.
+- Wrote a Linux client that receives new cli credentials and updates the aws credentials file default profile.

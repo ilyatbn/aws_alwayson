@@ -123,8 +123,10 @@ async function main(){
   let props = await storage.get(null)
   //first run
   if(props.roleCount===undefined){
-  storage.set({organization_domain: '', google_spid: '', google_idpid: '', saml_provider: 'gsuite',
-    refresh_interval: 59, session_duration: 3600, roleCount: 1, platform: getPlatform()})
+  storage.set({organization_domain: '', google_spid: '', google_idpid: '',
+    saml_provider: 'gsuite', refresh_interval: 59, session_duration: 3600,
+    roleCount: 1, platform: getPlatform(), clientupdate: false
+  })
     $('#go-to-options').click()
   }
   buildMenu(props)
