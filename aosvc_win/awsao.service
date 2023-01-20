@@ -1,10 +1,10 @@
 [Unit]
-Description=AWS AlwasyON service
+Description=AWS AlwasyOn client service
 After=dbus.service
 
 [Service]
 StandardError=journal
-ExecStart=/usr/local/bin/awsaoservice
+ExecStart=/usr/local/bin/awsao
 
 [Install]
 WantedBy=default.target
