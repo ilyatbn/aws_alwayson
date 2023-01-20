@@ -127,7 +127,7 @@ function refreshAwsTokensAndStsCredentials(props,port,samlResponse){
     let role = props[props.checked]
     let roleArn=arnPrefix+role
     let awsAccount=(roleArn.split(":"))[4]
-    let principalArn=`${arnPrefix}${awsAccount}:saml-provider/gsuite`
+    let principalArn=`${arnPrefix}${awsAccount}:saml-provider/${props.saml_provider}`
     let data = "RelayState=&SAMLResponse="+encodeURIComponent(samlResponse)+"&name=&portal=&roleIndex="+encodeURIComponent(roleArn);
     fetch(awsSamlUrl, {
         method: "POST",

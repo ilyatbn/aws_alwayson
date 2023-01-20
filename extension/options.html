@@ -30,19 +30,24 @@
                 <td><div class="layout"></div><img class="helpimg" id="infoPic4" alt="Easiest way to locate it is by copying the link to AWS in your Google apps menu. it will contain spid=YOUR_SP_ID" src="/img/moreinfo.png"></td>
             </div>
             <div class="item1">
+                <div class="a">SAML Provider</div>
+                <input type="text" value="" id="saml_provider" placeholder="SAML Provider" class="txtbox" />
+                <td><div class="layout"></div><img class="helpimg" id="infoPic5" alt="PrincipalArn saml-provider name, usually gsuite" src="/img/moreinfo.png"></td>
+            </div>
+            <div class="item1">
                 <div class="a">Token refresh interval.</div>
                 <input type="text" value="" id="refresh_interval" placeholder="Token auto-refresh interval" class="txtbox" />
-                <td><div class="layout"></div><img class="helpimg" id="infoPic5" alt="Keep this under 60. For some reason, AWS Web console session timeout is set to 1 hour maximum even if your IAM role is configured for more." src="/img/moreinfo.png"></td>
+                <td><div class="layout"></div><img class="helpimg" id="infoPic6" alt="Keep this under 60. For some reason, AWS Web console session timeout is set to 1 hour maximum even if your IAM role is configured for more." src="/img/moreinfo.png"></td>
             </div>
             <div class="item1">
                 <div class="a">Token session duration in seconds.</div>
                 <input type="text" value="" id="session_duration" placeholder="Token session duration in seconds" class="txtbox" />
-                <td><div class="layout"></div><img class="helpimg" id="infoPic6" alt="Make sure you do not exceed the value configured in the IAM role. If you don't know it, keep at the default of 1 hour." src="/img/moreinfo.png"></td>
+                <td><div class="layout"></div><img class="helpimg" id="infoPic7" alt="Make sure you do not exceed the value configured in the IAM role. If you don't know it, keep at the default of 1 hour." src="/img/moreinfo.png"></td>
             </div>
             <div class="item1">
                 <div class="a">OS platform for STS CLI.</div>
                 <input type="text" value="" id="platform" class="txtbox" />
-                <td><div class="layout"></div><img class="helpimg" id="infoPic7" alt="Each OS platform has it's own command-line for settings enviroment variables. You can change it here." src="/img/moreinfo.png"></td>
+                <td><div class="layout"></div><img class="helpimg" id="infoPic8" alt="Each OS platform has it's own command-line for settings enviroment variables. You can change it here." src="/img/moreinfo.png"></td>
             </div>            
         </div>
     </body>

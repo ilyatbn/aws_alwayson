@@ -21,8 +21,8 @@ $(".txtbox").focusout(function() {
 });
  
 function loadOptions() {
-  storage.get({organization_domain, google_spid, google_idpid, refresh_interval, 
-    session_duration, roleCount, platform}, function(props) {
+  storage.get({organization_domain, google_spid, google_idpid, saml_provider,
+    refresh_interval, session_duration, roleCount, platform}, function(props) {
       $(".txtbox").each(function() {
         $(this).val(props[$(this).prop("id")])
       })
