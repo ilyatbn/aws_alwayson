@@ -98,3 +98,8 @@ ___
 v1.2.0
 - Added an option to enable local client update.
 - Wrote a Linux client that receives new cli credentials and updates the aws credentials file default profile.
+___
+v1.2.1
+- Support to change the SAML provider name configured in your AWS account - by Muha Ajjan
+- Refactored the client to support both Windows and Linux. Can be run as a service or manuallly.
+- default values will now be set each time you open the extensions. this is done to make sure that if new default values to options are added, they will be set.

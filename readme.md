@@ -43,17 +43,17 @@ Click on the slider to start the token auto refresh procedure.
 After enabling the refresh you can also click on the CLI button to get the temporary STS credentials.  
 
 ### Updater Service installation
-`Only available for Linux for now.`  
+Runs a minimalistic webserver on 127.0.0.1:31339 that listens requests for updates from the extension, then makes sure that on every manual/automated refresh of the credentials, the local credentials file gets updated as well.  
+To enabled this feature, click the toggle in the options menu.  
+`Tested on Windows 11 22H2 and Ubuntu 20.04LTS`  
 ```
-cd awsaoservice
+cd awsao
 go build
-sudo cp awsaoservice /usr/local/bin
-sudo chmod 0700 /usr/local/bin/awsaoservice
-sudo cp example.service /etc/systemd/system/awsao.service
-sudo systemctl start awsao.service
-sudo systemctl enable awsao.service
+sudo install.sh / install.cmd (elevated cmd shell)
 ```
-after that you can tick the checkbox in the options menu. the service will be updated each time new STS credentials are generated.
+- Must be run as `root` or `nt_authority\system` user since it can update data for multiple user accounts and needs privileges to get the correct information about networking and processes.
+- logs requests to a log file, located in **/var/log/awsao.log** or **c:\ProgramData\awsao\awsao.log**. If run manually in windows, will create the log in the same directory it's run from.
+
 ## Changelog:
 Full changelog is available [here](/changelog.md).  
 ## Compatibility:
