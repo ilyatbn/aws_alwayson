@@ -80,7 +80,7 @@ func (p *program) getLogin() (string, error) {
 	// Check the currently established connections to our service, hopefully should only have one. 
 	// then we get the PID of the process establishing the connection and from there the username running it.
 	if p.settings.os=="windows"{
-		cmd := `(Get-NetTCPConnection | Where-Object State -eq Established | Where-Object LocalAddress -eq 127.0.0.1 | Where-Object RemotePort -eq 31339 | select OwningProcess).OwningProcess | ForEach-Object -Process {(Get-WmiObject Win32_Process -Filter "ProcessId=$_" | Select @{Name="UserName";Expression={$_.GetOwner().User}}).UserName}`
+		cmd := `(Get-NetTCPConnection | Where-Object State -eq Established | Where-Object LocalAddress -eq 127.0.0.1 | Where-Object RemotePort -eq 31339 | select OwningProcess).OwningProcess | ForEach-Object -Process {(Get-WmiObject Win32_Process -Filter "ProcessId=$_" | Select -First 1 |Select @{Name="UserName";Expression={$_.GetOwner().User}}).UserName}`
 		out, _ = exec.Command("powershell", cmd).Output()
 		p.settings.username=strings.TrimSuffix(string(out),"\r\n")
 	} else {
@@ -108,12 +108,12 @@ func (p *program) updateCredFile(creds Credentials) error {
 	if p.settings.os=="windows" {
 		//we only need the drive name which should be the same as there all the rest of the users are.
 		dirname, _ := os.UserHomeDir() 
-		filePath = fmt.Sprintf("%v/users/%v/.aws", dirname[0:2], user)
+		filePath = fmt.Sprintf("%v/users/%v/.aws/", dirname[0:2], user)
 	} else {
-		filePath = fmt.Sprintf("/home/%v/.aws", user)
+		filePath = fmt.Sprintf("/home/%v/.aws/", user)
 	}
 	log.Printf("path:%v", filePath)
-	cfg, err := ini.Load(filePath+"/credentials")
+	cfg, err := ini.Load(filePath+"credentials")
     if err != nil {
 		log.Printf("failed to read file: %v", err)
 		cfg = ini.Empty()
@@ -126,27 +126,39 @@ func (p *program) updateCredFile(creds Credentials) error {
 	cfg.Section("default").Key("aws_secret_access_key").SetValue(creds.SecretAccessKey)
 	cfg.Section("default").Key("aws_session_token").SetValue(creds.SessionToken)
 	cfg.Section("default").Key("aws_session_expiration").SetValue(creds.Expiration)
-	cfg.SaveTo(filePath+"/credentials")
-	log.Printf("updated %v/credentials file", filePath)
+	cfg.SaveTo(filePath+"credentials")
+	log.Printf("updated %vcredentials file", filePath)
 	return nil
 }
 
 func (p *program) processUpdate(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("could not read body: %s\n", err)
-	}
-	creds := Credentials{}
-    json.Unmarshal([]byte(body), &creds)
-	err = p.updateCredFile(creds)
-	var response string
-	if err != nil {
-		response = fmt.Sprintf("could not update file: %v", err)
+	log.Printf("meh %v",r.Method)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Private-Network", "true")
+    w.Header().Add("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, accept, origin, Access-Control-Allow-Private-Network")
+
+	if r.Method == "OPTIONS" {
+		log.Printf("received options request")
+		http.Error(w, "No Content", http.StatusNoContent)
+        return
 	} else {
-		response = "ok"
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			log.Printf("could not read body: %s\n", err)
+		}
+		creds := Credentials{}
+		json.Unmarshal([]byte(body), &creds)
+		err = p.updateCredFile(creds)
+		var response string
+		if err != nil {
+			response = fmt.Sprintf("could not update file: %v", err)
+		} else {
+			response = "ok"
+		}
+		w.Header().Set("Connection", "close")
+		io.WriteString(w, response)
 	}
-	w.Header().Set("Connection", "close")
-	io.WriteString(w, response)
 }
 
 func (p *program) initWebServer(server *http.Server) error {
