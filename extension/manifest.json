@@ -3,7 +3,7 @@
   
     "name": "AWS AlwaysON",
     "description": "Stay logged in to AWS console and get STS credentials for CLI access.",
-    "version": "1.1.1",
+    "version": "1.2.1",
     "action": {
      "default_popup": "menu.html"
     },
@@ -18,7 +18,8 @@
      "https://accounts.google.com/*",
      "https://signin.aws.amazon.com/*",
      "https://console.aws.amazon.com/*",
-     "https://sts.amazonaws.com/*"
+     "https://sts.amazonaws.com/*",
+     "http://localhost/*"
     ],
      "background": {
         "service_worker": "background.js",

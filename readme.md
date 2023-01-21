@@ -7,6 +7,7 @@ The extension was developed for Chrome but works mostly fine on all major browse
 ## Features
 - Refresh AWS Web Console session automatically to keep user logged in. 
 - Get temporary credentials for assumed role to use for CLI access.
+- Automatically update local aws credentials file.
 
 ## Installation
 
@@ -40,6 +41,19 @@ Now you can add your user's IAM role or roles.
 
 Click on the slider to start the token auto refresh procedure.  
 After enabling the refresh you can also click on the CLI button to get the temporary STS credentials.  
+
+### Updater Service installation
+Runs a minimalistic webserver on 127.0.0.1:31339 that listens requests for updates from the extension, then makes sure that on every manual/automated refresh of the credentials, the local credentials file gets updated as well.  
+To enabled this feature, click the toggle in the options menu.  
+`Tested on Windows 11 22H2 and Ubuntu 20.04LTS`  
+```
+cd awsao
+go build
+sudo install.sh / install.cmd (elevated cmd shell)
+```
+- Must be run as `root` or `nt_authority\system` user since it can update data for multiple user accounts and needs privileges to get the correct information about networking and processes.
+- logs requests to a log file, located in **/var/log/awsao.log** or **c:\ProgramData\awsao\awsao.log**. If run manually in windows, will create the log in the same directory it's run from.
+
 ## Changelog:
 Full changelog is available [here](/changelog.md).  
 ## Compatibility:
@@ -53,7 +67,7 @@ Firefox - v100
 - (Edge) Options UI is smaller than the elements.  
 - (Opera) Options UI opens in a full tab.  
 ## To Do:  
-- (medium) Make the IAM role session timeout fallback to 3600 if configured more than maximum allowed.  
+- (low) Make the IAM role session timeout fallback to 3600 if configured more than maximum allowed.  
 - (low) Add 2nd tier role assumption (using https://signin.aws.amazon.com/switchrole)  
 - (very_low) Build options menu dynamically like I did with the roles menu.  
 - Central Settings Management (random thought):  
@@ -61,4 +75,4 @@ Firefox - v100
     * create a microservice that gets a request and responds with parameters(extention will pass email).   Microservice will be in the customer's datacenter for now.  
     https://developers.google.com/admin-sdk/directory/v1/guides/manage-users  
     create roll mapping (group(in gsuite)-role(manual/get from gsuite with api key?)).  
-- Preset commands
+- Preset commands (using the client)

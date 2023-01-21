@@ -1,4 +1,9 @@
 const storage = getApi().storage.local
+//default values for options. 
+var defaults = {organization_domain: '', google_spid: '', google_idpid: '',
+saml_provider: 'gsuite', refresh_interval: 59, session_duration: 3600,
+platform: getPlatform(), clientupdate: false
+}
 
 function getApi() {
   if (typeof chrome !== "undefined") {
@@ -119,12 +124,20 @@ function getPlatform(){
   let platform = navigator?.userAgentData?.platform || navigator?.platform || 'unknown'
   return platform
 }
+
 async function main(){
   let props = await storage.get(null)
-  //first run
+  //set default values if undefined or empty
+  Object.keys(defaults).forEach(function(item) {
+    if(!(item in props) || props[item]===undefined || props[item]===""){
+      storage.set({[item]: defaults[item]})
+    }
+  })
+  //need to refresh it again..
+  props = await storage.get(null)
+  console.log(props)
   if(props.roleCount===undefined){
-  storage.set({organization_domain: '', google_spid: '', google_idpid: '', saml_provider: 'gsuite',
-    refresh_interval: 59, session_duration: 3600, roleCount: 1, platform: getPlatform()})
+    storage.set({'roleCount':1})
     $('#go-to-options').click()
   }
   buildMenu(props)

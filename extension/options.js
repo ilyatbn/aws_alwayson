@@ -9,9 +9,8 @@ function getApi() {
     }
   }
 }
-//Save options to local storage automatically
+//Save options to local storage
 $(".txtbox").focusout(function() {
-  console.log("focusout")
   let optionName = $(this).attr("id")
   let optionValue = $(this).val()
   let obj ={
@@ -19,7 +18,18 @@ $(".txtbox").focusout(function() {
   }
   storage.set(obj);
 });
- 
+
+//Save checkboxes values to local storage
+$(":checkbox").change(function() {
+  let optionName = $(this).attr("id")
+  let optionValue = $(this).prop("checked")
+  let obj ={
+    [optionName]:optionValue
+  }
+  storage.set(obj);
+});
+
+
 function loadOptions() {
   storage.get({organization_domain, google_spid, google_idpid, saml_provider,
     refresh_interval, session_duration, roleCount, platform}, function(props) {
@@ -28,7 +38,16 @@ function loadOptions() {
       })
       console.log(props)
   });
+
+  storage.get({clientupdate}, function(propscb) {
+      $(".chkbox").each(function() {
+        $(this).prop("checked",propscb[$(this).prop("id")])
+      })
+      console.log(propscb)
+  });
 }
+
+
 //display help information
 $("img[id^='infoPic']").hover(function () {
   $(".layout").css("display", "block");
