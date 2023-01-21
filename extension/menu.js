@@ -129,7 +129,7 @@ async function main(){
   let props = await storage.get(null)
   //set default values if undefined or empty
   Object.keys(defaults).forEach(function(item) {
-    if(!(defaults[item]==="") && (!(item in props) || props[item]===undefined || props[item]==="")){
+    if(!(item in props) || props[item]===undefined || props[item]===""){
       storage.set({[item]: defaults[item]})
     }
   })
