@@ -52,7 +52,7 @@ go build
 sudo install.sh / install.cmd (elevated cmd shell)
 ```
 - Must be run as `root` or `nt_authority\system` user since it can update data for multiple user accounts and needs privileges to get the correct information about networking and processes.
-- logs requests to a log file, located in **/var/log/awsao.log** or **c:\ProgramData\awsao\awsao.log**. If run manually in windows, will create the log in the same directory it's run from.
+- logs requests to a log file, located in **/var/log/aosvc.log** or **c:\ProgramData\aosvc\aosvc.log**. If run manually in windows, will create the log in the same directory it's run from.
 
 ## Changelog:
 Full changelog is available [here](/changelog.md).  

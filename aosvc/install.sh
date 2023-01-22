@@ -1,5 +1,5 @@
 #!/bin/bash
-sudo cp awsao /usr/local/bin
-sudp cp awsao.service /etc/systemd/system
-systemctl start awsao.service
-systemctl enable awsao.service
+sudo cp aosvc /usr/local/bin
+sudp cp aosvc.service /etc/systemd/system
+systemctl start aosvc.service
+systemctl enable aosvc.service

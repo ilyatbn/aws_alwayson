@@ -51,7 +51,7 @@ func (p *program) Init(env svc.Environment) error {
 	if current_settings.os == "windows" {
 		if env.IsWindowsService() {
 			current_settings.svc=true
-			current_settings.logpath="c:/programdata/awsao"
+			current_settings.logpath="c:/programdata/aosvc"
 			_ = os.MkdirAll(current_settings.logpath, os.ModePerm)
 		} else {
 			path, _ := os.Getwd()
@@ -61,7 +61,7 @@ func (p *program) Init(env svc.Environment) error {
 		} else {
 			current_settings.logpath="/var/log" 
 		}
-	file, err := os.OpenFile(current_settings.logpath+"/awsao.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	file, err := os.OpenFile(current_settings.logpath+"/aosvc.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -112,7 +112,7 @@ func (p *program) updateCredFile(creds Credentials) error {
 	} else {
 		filePath = fmt.Sprintf("/home/%v/.aws/", user)
 	}
-	log.Printf("path:%v", filePath)
+	log.Printf("credentials dir:%v", filePath)
 	cfg, err := ini.Load(filePath+"credentials")
     if err != nil {
 		log.Printf("failed to read file: %v", err)
@@ -132,7 +132,6 @@ func (p *program) updateCredFile(creds Credentials) error {
 }
 
 func (p *program) processUpdate(w http.ResponseWriter, r *http.Request) {
-	log.Printf("meh %v",r.Method)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Private-Network", "true")
@@ -187,7 +186,7 @@ func (p *program) Start() error {
 }
 
 func (p *program) Stop() error {
-	log.Println("aws alwayson client service stopping..")
+	log.Println("aws alwayson client service stopping")
 	p.webserver.Shutdown(context.Background())
 	close(p.quit)
 	p.wg.Wait()

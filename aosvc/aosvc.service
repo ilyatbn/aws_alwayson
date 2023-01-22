@@ -4,7 +4,7 @@ After=dbus.service
 
 [Service]
 StandardError=journal
-ExecStart=/usr/local/bin/awsao
+ExecStart=/usr/local/bin/aosvc
 
 [Install]
 WantedBy=default.target
