@@ -1,0 +1,10 @@
+[Unit]
+Description=AWS AlwasyOn client service
+
+[Service]
+SyslogIdentifier=aosvc
+Environment=PYTHONUNBUFFERED=x
+ExecStart=%h/.local/bin/aosvc
+
+[Install]
+WantedBy=default.target
