@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+import argparse
+import configparser
+import http.server
+import json
+import logging
+import pathlib
+
+
+logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
+logger = logging.getLogger()
+
+
+class MyRequestHandler(http.server.BaseHTTPRequestHandler):
+    def _resp(self, status_code=http.HTTPStatus.OK, content=None):
+        self.send_response(status_code)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Private-Network', 'true')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Content-Length, Accept-Encoding, accept, origin, Access-Control-Allow-Private-Network')
+        self.send_header('Connection', 'close')
+        if content is not None:
+            if hasattr(content, 'encode'):
+                content = content.encode()
+            elif not isinstance(content, str):
+                content = str(content).encode()
+            self.send_header('Content-Length', str(len(content)))
+        self.end_headers()
+
+        if content is not None:
+            self.wfile.write(content)
+
+    def parse_request(self):
+        if not super().parse_request():
+            logger.error(f'bad request! {self.raw_requestline!r}')
+            return False
+
+        if self.path.rstrip('/') != '/update':
+            self._resp(http.HTTPStatus.NOT_FOUND)
+            return False
+
+        return True
+
+    def do_OPTIONS(self):
+        return self._resp(http.HTTPStatus.NO_CONTENT)
+
+    def do_POST(self):
+        try:
+            credentials = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+        except Exception as e:
+            logger.exception('Error parsing request!')
+            return self._resp(http.HTTPStatus.BAD_REQUEST, f'{type(e).__name__}: {e}')
+
+        try:
+            aws_credentials_path = pathlib.Path(f'~/.aws/credentials').expanduser()
+            ini = configparser.ConfigParser()
+            ini.read(aws_credentials_path)
+            section = ini['default']
+            section['aws_access_key_id'] = credentials['AccessKeyId']
+            section['aws_secret_access_key'] = credentials['SecretAccessKey']
+            section['aws_session_token'] = credentials['SessionToken']
+            section['aws_session_expiration'] = credentials['Expiration']
+            with aws_credentials_path.open('w') as f:
+                ini.write(f, space_around_delimiters=False)
+        except Exception as e:
+            logger.exception('Error updating credentials file!')
+            return self._resp(http.HTTPStatus.INTERNAL_SERVER_ERROR, f'{type(e).__name__}: {e}')
+
+        return self._resp(http.HTTPStatus.OK, 'ok')
+
+
+def main():
+    p = argparse.ArgumentParser(conflict_handler='resolve')
+    p.add_argument('-h', '--host', default='127.0.0.1')
+    p.add_argument('-p', '--port', type=int, default=31339)
+    args = p.parse_args()
+
+    server = http.server.HTTPServer((args.host, args.port), MyRequestHandler)
+    logger.info(f'Serving on {server.server_address[0]}:{server.server_address[1]}')
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        server.server_close()
+
+
+if __name__ == "__main__":
+    main()
