@@ -1,6 +1,6 @@
 # aosvc-python
 
-This is an alternative for the Go-based `aosvc`. Itsupportnux use via systemd (WSL2 supported), although it can be used on windows by using e.g. [NSSM](https://nssm.cc/).
+This is an alternative for the Go-based `aosvc`.
 
 ## Supported OS
 
