@@ -27,9 +27,6 @@ The script will install the python script in `~/.local/bin/` and the service uni
 There's also an `uninstall.sh` for removal.
 
 ### Mac
-** You have to edit `aosvc.plist` (line 11) and change the hardcoded home path.**
-I couldnt make it work with `$HOME` or `~`, still looking on it
-
 Just `cd` into this directory and run the installation script:
 ```sh
 cd aosvc-python
