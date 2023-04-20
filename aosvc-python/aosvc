@@ -11,6 +11,9 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=loggin
 logger = logging.getLogger()
 
 
+AWS_CREDENTIALS_PATH = pathlib.Path(f'~/.aws/credentials').expanduser()
+
+
 class MyRequestHandler(http.server.BaseHTTPRequestHandler):
     def _resp(self, status_code=http.HTTPStatus.OK, content=None):
         self.send_response(status_code)
@@ -52,15 +55,15 @@ class MyRequestHandler(http.server.BaseHTTPRequestHandler):
             return self._resp(http.HTTPStatus.BAD_REQUEST, f'{type(e).__name__}: {e}')
 
         try:
-            aws_credentials_path = pathlib.Path(f'~/.aws/credentials').expanduser()
-            ini = configparser.ConfigParser()
-            ini.read(aws_credentials_path)
+            # The default_section argument makes sure we have the section even if it's not in the file (or there is no file)
+            ini = configparser.ConfigParser(default_section='default')
+            ini.read(AWS_CREDENTIALS_PATH)
             section = ini['default']
             section['aws_access_key_id'] = credentials['AccessKeyId']
             section['aws_secret_access_key'] = credentials['SecretAccessKey']
             section['aws_session_token'] = credentials['SessionToken']
             section['aws_session_expiration'] = credentials['Expiration']
-            with aws_credentials_path.open('w') as f:
+            with AWS_CREDENTIALS_PATH.open('w') as f:
                 ini.write(f, space_around_delimiters=False)
         except Exception as e:
             logger.exception('Error updating credentials file!')
@@ -74,6 +77,8 @@ def main():
     p.add_argument('-h', '--host', default='127.0.0.1')
     p.add_argument('-p', '--port', type=int, default=31339)
     args = p.parse_args()
+
+    AWS_CREDENTIALS_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     server = http.server.HTTPServer((args.host, args.port), MyRequestHandler)
     logger.info(f'Serving on {server.server_address[0]}:{server.server_address[1]}')
