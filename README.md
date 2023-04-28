@@ -7,6 +7,7 @@ The extension was developed for Chrome but works mostly fine on all major browse
 ## Features
 - Refresh AWS Web Console session automatically to keep user logged in. 
 - Get temporary credentials for assumed role to use for CLI access.
+- Autofill all available AWS roles for Google Workspace account.
 - Automatically update local aws credentials file.
 
 ## Installation
@@ -35,44 +36,61 @@ Click Load Temporary Add-on... and select the manifest.json file.
 ## Using the extension  
 First you will need to configure some properties in the Options menu. Each property has additional info that you can read to help you set it up properly.  
 ![Options](img/opts.png)  
-When you are done, press the Save button and exit the Options menu.  
-Now you can add your user's IAM role or roles.    
+When you are done, exit the Options menu.  
+Now you can add your user's IAM role or roles or click the (A) button to initiate autofill.    
 ![Main menu](img/main.png)  
 
 Click on the slider to start the token auto refresh procedure.  
 After enabling the refresh you can also click on the CLI button to get the temporary STS credentials.  
 
 ### Updater Service installation
-Runs a minimalistic webserver on 127.0.0.1:31339 that listens requests for updates from the extension, then makes sure that on every manual/automated refresh of the credentials, the local credentials file gets updated as well.  
-To enabled this feature, click the toggle in the options menu.  
+The credentials updater service runs a minimalistic webserver on 127.0.0.1:31339 that listens requests for updates from the extension. 
+To enabled this feature, click the toggle in the Options menu.  
+
+#### Golang based service:
+Pros:
+- No need for extra software. Runs natively on both Windows and Linux.  
+- Supports credentials updates multiple users connected to a machine concurrently.  
+
+Cons:  
+- A highly privileged account is required to run with multi-user support.
+
 `Tested on Windows 11 22H2 and Ubuntu 20.04LTS`  
 ```
 cd awsao
 go build
 sudo install.sh / install.cmd (elevated cmd shell)
 ```
-- Must be run as `root` or `nt_authority\system` user since it can update data for multiple user accounts and needs privileges to get the correct information about networking and processes.
 - logs requests to a log file, located in **/var/log/aosvc.log** or **c:\ProgramData\aosvc\aosvc.log**. If run manually in windows, will create the log in the same directory it's run from.
+
+
+#### Python based service
+Pros:  
+- Does not require privileged accounts to run.
+- Easier to develop cross OS compatibility.  
+
+Cons:  
+- Cannot run on multiple user accounts logged into a machine.
+
+More info [here](/aosvc-python/README.md).
+
+`Currenly only Linux is supported.`  
 
 ## Changelog:
 Full changelog is available [here](/changelog.md).  
 ## Compatibility:
 Tested and working on:  
 Chrome - v101  
-Brave - v1.38.111   
+Brave - v1.38.111  
 Edge  - v101      
 Opera - v86  
 Firefox - v100  
 ## Known issues:  
 - (Edge) Options UI is smaller than the elements.  
 - (Opera) Options UI opens in a full tab.  
+- Sometimes when the Gmail user account is signed out (or the session expires), the error message shown in the extension is incorrect.
 ## To Do:  
 - (low) Make the IAM role session timeout fallback to 3600 if configured more than maximum allowed.  
 - (low) Add 2nd tier role assumption (using https://signin.aws.amazon.com/switchrole)  
 - (very_low) Build options menu dynamically like I did with the roles menu.  
-- Central Settings Management (random thought):  
-    * add "settings are managed by an administrator" checkbox. if true; hide all the regular options. add new option called "management server url". on save, add additional permission to fetch from management_server_url. fetch settings from server(streaming connection?) and update local settings. add option to disable the toggle for management server url(make the toggle one-way).    
-    * create a microservice that gets a request and responds with parameters(extention will pass email).   Microservice will be in the customer's datacenter for now.  
-    https://developers.google.com/admin-sdk/directory/v1/guides/manage-users  
-    create roll mapping (group(in gsuite)-role(manual/get from gsuite with api key?)).  
-- Preset commands (using the client)
+- Preset commands (using the client)  
