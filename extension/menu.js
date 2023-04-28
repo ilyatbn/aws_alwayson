@@ -111,13 +111,6 @@ async function buildMenu(props){
   }
   handleTextboxes(props)
   populateCheckboxesAndButtons(props)
-  //center the options button
-  $(window).resize(function() {
-    let height_bottom = Math.round($(document).height() * 0.67)
-    let height_top = Math.round($(document).height() * 0.33)
-    $(".options_btn").css("margin-top",height_bottom - 20);      
-    $(".autofill_btn").css("margin-top",height_top - 24);      
-  });
 }
 
 function getPlatform(){

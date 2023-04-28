@@ -5,15 +5,15 @@ body {
 }
 .grid-container {
     display: grid;
-    grid: 100px / 1 auto auto;
     grid-gap: 5px;
     background-color: #b2b2b2;
     padding: 5px;
+    margin-right: 25px;
   }
 
   .grid-container > div {
     background-color: rgba(255, 255, 255, 0.8);
-    padding: 10px 0;
+    padding: 6px 0;
     font-size: 20px;
   }
   
@@ -21,15 +21,15 @@ body {
           display: block;
           float: left;
           height: 30px;
-          width: 300px;
-          margin-left: 10px;
-        }
+          width: 275px;
+          margin-left: 5px;
+  }
   
   .btncls{
       display: block;
       float: left;
       margin: 7px 10px;
-      }
+  }
   
   .switch {
     position: relative;
@@ -108,8 +108,7 @@ body {
     height: 24px; 
     border: none;
     float: right;
-    position: relative;
-    margin: 50px 0px 0px 2px;
+    margin: 0px 0px 0px 2px;
   }
 
   .autofill_btn{
@@ -120,11 +119,37 @@ body {
     height: 29px; 
     border: none;
     float: right;
-    position: relative;
-    margin: 50px -29px 0px 5px;
+    margin: -1px;
     --enabled: 0
   }
 
   .clibtn:hover {
     box-shadow: 0 0 2px 1px #ff5400;
+  }
+
+.sidebar {
+  height: 100%;
+  width: 30px;
+  position: fixed;
+  top: 0;
+  z-index: 1;
+  background-color: rgba(199, 199, 199, 1.0);
+  display: inline-grid;
+  align-content: space-evenly;  
+  }
+  .right {
+    right: 0;
+  }
+  .left {
+    left: 0;
+  }
+
+  .errorbar {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    background-color: #ff5400;
+    z-index: 1;
+    color: #ffffff;
   }
