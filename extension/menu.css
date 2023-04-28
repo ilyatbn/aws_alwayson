@@ -144,12 +144,12 @@ body {
     left: 0;
   }
 
-  .errorbar {
-    position: fixed;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    background-color: #ff5400;
-    z-index: 1;
-    color: #ffffff;
-  }
+.errorbar {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background-color: #ff5400;
+  z-index: 1;
+  color: #ffffff;
+}

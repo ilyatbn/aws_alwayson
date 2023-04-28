@@ -28,22 +28,33 @@ $(":checkbox").change(function() {
   }
   storage.set(obj);
 });
-
+// Save dropdown menu options
+$('select').change(function() {
+  let optionName = $(this).attr("id")
+  let optionValue = $(this).val()
+  let obj ={
+    [optionName]:optionValue
+  }
+  storage.set(obj);
+});
 
 function loadOptions() {
+  storage.get({idp_type}, function(props) {
+    $('select').each(function() {
+      $(this).val(props[$(this).prop("id")])
+    })
+  });
   storage.get({organization_domain, google_spid, google_idpid, saml_provider,
     refresh_interval, session_duration, roleCount, platform}, function(props) {
       $(".txtbox").each(function() {
         $(this).val(props[$(this).prop("id")])
       })
-      console.log(props)
   });
 
-  storage.get({clientupdate}, function(propscb) {
+  storage.get({clientupdate}, function(props) {
       $(".chkbox").each(function() {
-        $(this).prop("checked",propscb[$(this).prop("id")])
+        $(this).prop("checked",props[$(this).prop("id")])
       })
-      console.log(propscb)
   });
 }
 
@@ -61,4 +72,16 @@ $("img[id^='infoPic']").hover(function () {
   $(".layout").text(''); 
 });
 
+$('.tablinks').click(function(){
+  let id  = $(this).prop("id")
+  $('.grid-container').each(function() {
+    if ($(this).prop("id") === id){
+      $(this).css("display", "grid");
+    } else {
+      $(this).css("display", "none");
+    }
+  })  
+});
+
 $( document ).ready(loadOptions)
+

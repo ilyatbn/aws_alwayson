@@ -7,53 +7,69 @@
         <link rel="stylesheet" type="text/css" href="options.css">
     </head>
     <body>
-        <div id="main" style="width: 400px; height:560px; margin: 5px;" />
-        <div class="grid-container">
-            <div class="item">
-                <div class="a">Role count</div>
-                    <input type="text" value="" id="roleCount" placeholder="Role count in menu" class="txtbox" />
-                <td><div class="layout"></div><img class="helpimg" id="infoPic" alt="The amount of roles you will be using in the menu." src="/img/moreinfo.png"></td>
-            </div>    
-            <div class="item">
-                <div class="a">Your organization's domain name.</div>
-                <input type="text" value="" id="organization_domain" placeholder="Organization domain name" class="txtbox" />
-                <td><div class="layout"></div><img class="helpimg" id="infoPic2" alt="Used to locate the correct account when logged in to several Google accounts at once." src="/img/moreinfo.png"></td>
-            </div>
-            <div class="item">
-                <div class="a">Google Identity Provider ID</div>
-                <input type="text" value="" id="google_idpid" placeholder="Google Identity Provider ID" class="txtbox" />
-                <td><div class="layout"></div><img class="helpimg" id="infoPic3" alt="Easiest way to locate it is by copying the link to AWS in your Google apps menu. it will contain idpid=YOUR_IDP_ID" src="/img/moreinfo.png"></td>
-            </div>
-            <div class="item">
-                <div class="a">Google Service Provider ID</div>
-                <input type="text" value="" id="google_spid" placeholder="Google Service Provider ID" class="txtbox" />
-                <td><div class="layout"></div><img class="helpimg" id="infoPic4" alt="Easiest way to locate it is by copying the link to AWS in your Google apps menu. it will contain spid=YOUR_SP_ID" src="/img/moreinfo.png"></td>
-            </div>
-            <div class="item">
-                <div class="a">SAML Provider</div>
-                <input type="text" value="" id="saml_provider" placeholder="SAML Provider" class="txtbox" />
-                <td><div class="layout"></div><img class="helpimg" id="infoPic5" alt="PrincipalArn saml-provider name, usually gsuite" src="/img/moreinfo.png"></td>
-            </div>
-            <div class="item">
-                <div class="a">Token refresh interval.</div>
-                <input type="text" value="" id="refresh_interval" placeholder="Token auto-refresh interval" class="txtbox" />
-                <td><div class="layout"></div><img class="helpimg" id="infoPic6" alt="Keep this under 60. For some reason, AWS Web console session timeout is set to 1 hour maximum even if your IAM role is configured for more." src="/img/moreinfo.png"></td>
-            </div>
-            <div class="item">
-                <div class="a">Token session duration in seconds.</div>
-                <input type="text" value="" id="session_duration" placeholder="Token session duration in seconds" class="txtbox" />
-                <td><div class="layout"></div><img class="helpimg" id="infoPic7" alt="Make sure you do not exceed the value configured in the IAM role. If you don't know it, keep at the default of 1 hour." src="/img/moreinfo.png"></td>
-            </div>
-            <div class="item">
-                <div class="a">OS platform for STS CLI.</div>
-                <input type="text" value="" id="platform" class="txtbox" />
-                <td><div class="layout"></div><img class="helpimg" id="infoPic8" alt="Each OS platform has it's own command-line for settings enviroment variables. You can change it here." src="/img/moreinfo.png"></td>
-            </div>
-            <div class="item">
-                <div class="a">Update local AWS Credentials profile</div>
-                <input type="checkbox" id="clientupdate" class="chkbox" />
-                <td><div class="layout"></div><img class="helpimg" id="infoPic9" alt="If enabled, updates the AWS AlwaysON service with new credentials, which then updates the [default] profile in the aws credentials file." src="/img/moreinfo.png"></td>
-            </div>    
+
+    <div class="topbar">
+        <button class="tablinks" id="options_main">Main</button>
+        <button class="tablinks" id="options_google">Google</button>
+    </div>
+    
+    <div id="g" style="width: 400px; height:560px; padding-top: 25px;" />
+    <div id="options_main" class="grid-container" style="display: grid;"> 
+        <div class="item">
+            <div class="a">IDP Type</div>
+                <select type="text" id="idp_type", class="dropdown">
+                    <option value="none">Select an option</option>
+                    <option value="google">Google Workspace</option>
+                </select>
+            <td><div class="layout"></div><img class="helpimg" id="infoPic" alt="Select one of the supported Identity Provider services." src="/img/moreinfo.png"></td>
         </div>
+        <div class="item">
+            <div class="a">SAML Provider name</div>
+            <input type="text" value="" id="saml_provider" placeholder="SAML Provider" class="txtbox" />
+            <td><div class="layout"></div><img class="helpimg" id="infoPic5" alt="PrincipalArn saml-provider name set in AWS." src="/img/moreinfo.png"></td>
+        </div>
+        <div class="item">
+            <div class="a">Token refresh interval.</div>
+            <input type="text" value="" id="refresh_interval" placeholder="Token auto-refresh interval" class="txtbox" />
+            <td><div class="layout"></div><img class="helpimg" id="infoPic6" alt="Keep this under 60. For some reason, AWS Web console session timeout is set to 1 hour maximum even if your IAM role is configured for more." src="/img/moreinfo.png"></td>
+        </div>
+        <div class="item">
+            <div class="a">Token session duration in seconds.</div>
+            <input type="text" value="" id="session_duration" placeholder="Token session duration in seconds" class="txtbox" />
+            <td><div class="layout"></div><img class="helpimg" id="infoPic7" alt="Make sure you do not exceed the value configured in the IAM role. If you don't know it, keep at the default of 1 hour." src="/img/moreinfo.png"></td>
+        </div>
+        <div class="item">
+            <div class="a">OS platform for STS CLI.</div>
+            <input type="text" value="" id="platform" class="txtbox" />
+            <td><div class="layout"></div><img class="helpimg" id="infoPic8" alt="Each OS platform has it's own command-line for setting enviroment variables. You can change it here." src="/img/moreinfo.png"></td>
+        </div>
+        <div class="item">
+            <div class="a">Role count</div>
+                <input type="text" value="" id="roleCount" placeholder="Role count in menu" class="txtbox" />
+            <td><div class="layout"></div><img class="helpimg" id="infoPic" alt="The amount of roles you will be using in the menu." src="/img/moreinfo.png"></td>
+        </div>        
+        <div class="item">
+            <div class="a">Update local AWS Credentials profile</div>
+            <input type="checkbox" id="clientupdate" class="chkbox" />
+            <td><div class="layout"></div><img class="helpimg" id="infoPic9" alt="If enabled, updates the AWS AlwaysON service with new credentials, which then updates the [default] profile in the aws credentials file." src="/img/moreinfo.png"></td>
+        </div>    
+    </div>
+    <div id="options_google" class="grid-container"> 
+        <div class="item">
+            <div class="a">Your organization's domain name.</div>
+            <input type="text" value="" id="organization_domain" placeholder="Organization domain name" class="txtbox" />
+            <td><div class="layout"></div><img class="helpimg" id="infoPic2" alt="Used to locate the correct account when logged in to several Google accounts at once." src="/img/moreinfo.png"></td>
+        </div>
+        <div class="item">
+            <div class="a">Google Identity Provider ID</div>
+            <input type="text" value="" id="google_idpid" placeholder="Google Identity Provider ID" class="txtbox" />
+            <td><div class="layout"></div><img class="helpimg" id="infoPic3" alt="Easiest way to locate it is by copying the link to AWS in your Google apps menu. it will contain idpid=YOUR_IDP_ID" src="/img/moreinfo.png"></td>
+        </div>
+        <div class="item">
+            <div class="a">Google Service Provider ID</div>
+            <input type="text" value="" id="google_spid" placeholder="Google Service Provider ID" class="txtbox" />
+            <td><div class="layout"></div><img class="helpimg" id="infoPic4" alt="Easiest way to locate it is by copying the link to AWS in your Google apps menu. it will contain spid=YOUR_SP_ID" src="/img/moreinfo.png"></td>
+        </div>    
+    </div>    
     </body>
 </html> 

@@ -1,8 +1,8 @@
 const storage = getApi().storage.local
 //default values for options. 
 var defaults = {organization_domain: '', google_spid: '', google_idpid: '',
-saml_provider: 'gsuite', refresh_interval: 59, session_duration: 3600,
-platform: getPlatform(), clientupdate: false
+saml_provider: 'gsuite', refresh_interval: 59, session_duration: 3600, 
+platform: getPlatform(), clientupdate: false, idp_type: 'google'
 }
 
 function getApi() {
@@ -128,7 +128,6 @@ async function main(){
   })
   //need to refresh it again..
   props = await storage.get(null)
-  console.log(props)
   if(props.roleCount===undefined){
     storage.set({'roleCount':1})
     $('#go-to-options').click()
