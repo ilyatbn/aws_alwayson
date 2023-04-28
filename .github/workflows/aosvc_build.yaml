@@ -1,0 +1,38 @@
+name: aosvc_build
+
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  releases-matrix:
+    permissions:
+      contents: write  
+    name: build and release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, windows]
+        goarch: [amd64]
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Get changed files in the docs folder
+      id: changed-files-specific
+      uses: tj-actions/changed-files@v35
+      with:
+        files: aosvc/* 
+
+    - name: Build binary and add to releases
+      if: steps.changed-files-specific.outputs.any_changed == 'true'
+      uses: wangyoucao577/go-release-action@v1
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        goos: ${{ matrix.goos }}
+        goarch: ${{ matrix.goarch }}
+        project_path: "./aosvc"
+        binary_name: "aosvc"
+        extra_files: aosvc/install.sh aosvc/install.cmd

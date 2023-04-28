@@ -67,14 +67,15 @@ sudo install.sh / install.cmd (elevated cmd shell)
 #### Python based service
 Pros:  
 - Does not require privileged accounts to run.
-- Easier to develop cross OS compatibility.  
+- Requires an installation of Python
+- Easier to develop cross OS compatibility. This should theoretically run on anything that runs Python.   
 
 Cons:  
 - Cannot run on multiple user accounts logged into a machine.
 
 More info [here](/aosvc-python/README.md).
 
-`Currenly only Linux is supported.`  
+`Currenly only Linux is officially supported.`  
 
 ## Changelog:
 Full changelog is available [here](/changelog.md).  
