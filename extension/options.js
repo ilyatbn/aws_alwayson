@@ -47,7 +47,6 @@ function loadOptions() {
   });
 }
 
-
 //display help information
 $("img[id^='infoPic']").hover(function () {
   $(".layout").css("display", "block");
