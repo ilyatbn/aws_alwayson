@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>aosvc</string>
+    <key>ServiceDescription</key>
+    <string>AlwaysOn Service</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+    	<key>PYTHONUNBUFFERED</key>
+    	<string>x</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardErrorPath</key>
+    <string>/tmp/aosvc.err</string>
+    <key>StandardOutPath</key>
+    <string>/tmp/aosvc.out</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>export HOME=$(echo $HOME); $HOME/.local/share/aosvc/bin/aosvc</string>
+    </array>
+</dict>
+</plist>
+
