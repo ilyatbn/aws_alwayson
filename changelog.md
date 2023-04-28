@@ -103,3 +103,10 @@ v1.2.1
 - Support to change the SAML provider name configured in your AWS account - by Muha Ajjan
 - Refactored the client to support both Windows and Linux. Can be run as a service or manuallly.
 - default values will now be set each time you open the extensions. this is done to make sure that if new default values to options are added, they will be set.
+___
+v1.2.1.1
+- New Python based client as an alternative to the Golang client by @zeevro
+- MacOS support for aosvc-python by @egarbi
+- Github Action that build and adds the Golang client when creating a release
+- fixed install script for Linux Golang client. Thanks @iSWORD for the heads up.
+- moved todo to a Github project.

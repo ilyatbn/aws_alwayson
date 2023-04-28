@@ -67,10 +67,10 @@ sudo install.sh / install.cmd (elevated cmd shell)
 #### Python based service
 Pros:  
 - Does not require privileged accounts to run.
-- Requires an installation of Python
 - Easier to develop cross OS compatibility. This should theoretically run on anything that runs Python.   
 
 Cons:  
+- Requires an installation of Python.
 - Cannot run on multiple user accounts logged into a machine.
 
 More info [here](/aosvc-python/README.md).
@@ -90,8 +90,3 @@ Firefox - v100
 - (Edge) Options UI is smaller than the elements.  
 - (Opera) Options UI opens in a full tab.  
 - Sometimes when the Gmail user account is signed out (or the session expires), the error message shown in the extension is incorrect.
-## To Do:  
-- (low) Make the IAM role session timeout fallback to 3600 if configured more than maximum allowed.  
-- (low) Add 2nd tier role assumption (using https://signin.aws.amazon.com/switchrole)  
-- (very_low) Build options menu dynamically like I did with the roles menu.  
-- Preset commands (using the client)  
