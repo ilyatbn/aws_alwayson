@@ -35,4 +35,4 @@ jobs:
         goarch: ${{ matrix.goarch }}
         project_path: "./aosvc"
         binary_name: "aosvc"
-        extra_files: aosvc/install.sh aosvc/install.cmd
+        extra_files: ${{ fromJSON('["aosvc/install.sh aosvc/aosvc.service", "aosvc/install.cmd"]')[matrix.goos == 'windows'] }}
