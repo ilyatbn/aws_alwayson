@@ -8,6 +8,7 @@ user_uid=$(id -u)
 
 mkdir -p "$service_path"
 cp aosvc "$service_path"
+mkdir -p "$launch_config_dir"
 cp aosvc.plist "$launch_config_path"
 launchctl bootstrap "gui/$user_uid" "$launch_config_path"
 launchctl start aosvc
