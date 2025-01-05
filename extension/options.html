@@ -11,6 +11,7 @@
     <div class="topbar">
         <button class="tablinks" id="options_main">Main</button>
         <button class="tablinks" id="options_google">Google</button>
+        <button class="tablinks" id="options_awssso">AWS SSO</button>
     </div>
     
     <div id="g" style="width: 400px; height:560px; padding-top: 25px;" />
@@ -20,6 +21,7 @@
                 <select type="text" id="idp_type", class="dropdown">
                     <option value="none">Select an option</option>
                     <option value="google">Google Workspace</option>
+                    <option value="awssso">AWS SSO</option>
                 </select>
             <td><div class="layout"></div><img class="helpimg" id="infoPic" alt="Select one of the supported Identity Provider services." src="/img/moreinfo.png"></td>
         </div>
@@ -70,6 +72,13 @@
             <input type="text" value="" id="google_spid" placeholder="Google Service Provider ID" class="txtbox" />
             <td><div class="layout"></div><img class="helpimg" id="infoPic4" alt="Easiest way to locate it is by copying the link to AWS in your Google apps menu. it will contain spid=YOUR_SP_ID" src="/img/moreinfo.png"></td>
         </div>    
+    </div>    
+    <div id="options_awssso" class="grid-container"> 
+        <div class="item">
+            <div class="a">AWS SSO Subdomain</div>
+            <input type="text" value="" id="awssso_subdomain" placeholder="Subdomain for awsapps.com" class="txtbox" />
+            <td><div class="layout"></div><img class="helpimg" id="infoPic2" alt="used to start the SSO process using https://subdomain.awsapps.com" src="/img/moreinfo.png"></td>
+        </div>
     </div>    
     </body>
 </html> 

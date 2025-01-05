@@ -66,7 +66,6 @@ function populateCheckboxesAndButtons(props){
 };
 
 async function buildMenu(props){
-  $("#grid").empty();
   for (let i = 0; i < parseInt(props.roleCount); i++) {
     jQuery('<div>', {
       id: `item${i}`,

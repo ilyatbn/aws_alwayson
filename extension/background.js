@@ -106,10 +106,21 @@ async function main() {
 main()
 
 function confCheck(props){
-    if((props['organization_domain']||props['google_idpid']||props['google_spid']) === ''){
-        return false
+    // validate relevant params for idp type
+    console.log(`checking ${props['idp_type']}`)
+    if (props['idp_type']==='google'){
+        if((props['organization_domain']||props['google_idpid']||props['google_spid']) === ''){
+            return false
+        }
+        return true
+    } else if (props['idp_type']==='awssso'){
+        if((props['awssso_subdomain']) === ''){
+            return false
+        }
+        return true
     }
-    return true
+    // if nothing was selected, do not do anything
+    return false
 }
 
 function errHandler(port, msg){
@@ -177,7 +188,49 @@ function refreshAwsRoles(port,samlResponse){
     });
 }
 
-function awsInit(props, port=null, jobType='refresh'){
+
+function fetchSts(roleArn, principalArn, samlResponse, props, port){
+    let STSUrl = `${awsStsUrl}/?Version=2011-06-15&Action=AssumeRoleWithSAML&RoleArn=${roleArn}&PrincipalArn=${principalArn}&SAMLAssertion=${encodeURIComponent(samlResponse.trim())}&AUTHPARAMS&DurationSeconds=${props.session_duration}`
+    fetch(STSUrl, {
+        method: "GET",
+        headers: requestHeaders
+    }).then((response) => response.text()).then((data) => {
+        const parseGlobal = RegExp(stsTokenRegex, 'g');
+        let matches
+        let credobj = {}
+        while ((matches = parseGlobal.exec(data)) !== null) {
+            matches = matches.filter(function (i) {
+                return i != null;
+            });
+            storage.set({[`aws${matches[1]}`] : matches[2]})
+            credobj[`${matches[1]}`]=matches[2]
+        }
+        // update local client with the aws credentials
+        if (props['clientupdate']) {
+            fetch("http://localhost:31339/update", {
+                method: "POST",
+                headers: {"Content-Type":"application/json", "Accept": "application/json"},
+                body: JSON.stringify(credobj)
+            }).then((response) => response.text()).then((data) => {
+                if (data != "ok") {
+                    errHandler(port, data)
+                }
+            }).catch((error) => {
+                let msg = `Error updating local client:${error}`
+                errHandler(port, msg)
+            });
+        }
+
+        storage.set({'last_msg':'success'});
+        if (port) port.postMessage('sts_ready');
+    }).catch((error) => {
+        let msg = `Error getting STS credentials:${error}`
+        errHandler(port, msg)
+    });
+}
+
+function googleWorkspaceExtractor(props, port=null, jobType='refresh'){
+    console.log("refreshing creds using Google Workspace")
     fetch(googleAccountChooserUrl).then(response=> {
         response.text().then(accounts=> {
             var re = new RegExp(accountSelectionRegex.replace("DOMAIN",props.organization_domain),"i");
@@ -217,44 +270,78 @@ function awsInit(props, port=null, jobType='refresh'){
     }).catch((error) => {
         let msg = `Error finding Google account:${error}`
         errHandler(port, msg)
-    });
-};
-
-function fetchSts(roleArn, principalArn, samlResponse, props, port){
-    let STSUrl = `${awsStsUrl}/?Version=2011-06-15&Action=AssumeRoleWithSAML&RoleArn=${roleArn}&PrincipalArn=${principalArn}&SAMLAssertion=${encodeURIComponent(samlResponse.trim())}&AUTHPARAMS&DurationSeconds=${props.session_duration}`
-    fetch(STSUrl, {
-        method: "GET",
-        headers: requestHeaders
-    }).then((response) => response.text()).then((data) => {
-        const parseGlobal = RegExp(stsTokenRegex, 'g');
-        let matches
-        let credobj = {}
-        while ((matches = parseGlobal.exec(data)) !== null) {
-            matches = matches.filter(function (i) {
-                return i != null;
-            });
-            storage.set({[`aws${matches[1]}`] : matches[2]})
-            credobj[`${matches[1]}`]=matches[2]
-        }
-        if (props['clientupdate']) {
-            fetch("http://localhost:31339/update", {
-                method: "POST",
-                headers: {"Content-Type":"application/json", "Accept": "application/json"},
-                body: JSON.stringify(credobj)
-            }).then((response) => response.text()).then((data) => {
-                if (data != "ok") {
-                    errHandler(port, data)
-                }
-            }).catch((error) => {
-                let msg = `Error updating local client:${error}`
-                errHandler(port, msg)
-            });
-        }
-
-        storage.set({'last_msg':'success'});
-        if (port) port.postMessage('sts_ready');
-    }).catch((error) => {
-        let msg = `Error getting STS credentials:${error}`
-        errHandler(port, msg)
-    });
+    });    
 }
+async function browseAndTrackRedirects(awssso_subdomain) {
+    let capturedUrls = [];
+    const timeout = 30000;
+    let timeoutId;
+
+    const webRequestAPI = getApi().webRequest
+    const handleRedirect = (details) => {
+        console.log(details.url)
+        capturedUrls.push(details.url);
+    };
+
+    try {
+        // const filter = { urls: ["https://*.awsapps.com/*"] };
+        const filter = { urls: ["<all_urls>"] };
+        webRequestAPI.onBeforeRequest.addListener(handleRedirect, filter);
+
+        if (chrome.offscreen && chrome.offscreen.createDocument) {
+            // Use Offscreen Documents (Chrome/Edge only)
+            console.log(`Using Offscreen doc, subdomain: ${awssso_subdomain}`);
+            if (await chrome.offscreen.hasDocument()) {
+                await chrome.offscreen.closeDocument();
+            }
+            const offscreenUrl = chrome.runtime.getURL(`offscreen.html?subdomain=${awssso_subdomain}`);
+            await chrome.offscreen.createDocument({
+                url: offscreenUrl,
+                reasons: ["DOM_SCRAPING"],
+                justification: "Login to AWS SSO uses javascripts to generate session tokens based on our login information.",
+            });
+
+            // Wait for the timeout
+            timeoutId = setTimeout(async () => {
+                console.log("Timeout reached. Redirects captured:", capturedUrls);
+                await chrome.offscreen.closeDocument();
+            }, timeout);
+        } else {
+            // Fallback for Firefox or environments without Offscreen Documents
+            console.log("Using Hidden Tab");
+            const tab = await getApi().tabs.create({
+                url: targetUrl,
+                active: false,
+            });
+
+            timeoutId = setTimeout(async () => {
+                console.log("Timeout reached. Redirects captured:", capturedUrls);
+                if (tab?.id) await browser?.tabs.remove(tab.id) || chrome.tabs.remove(tab.id);
+            }, timeout);
+        }
+    } catch (error) {
+        console.error("Error during navigation to target, ", targetUrl, error);
+    } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+        webRequestAPI.onBeforeRequest.removeListener(handleRedirect);
+    }
+}
+
+function awsSSOExtractor(props, port=null, jobType='refresh'){
+    console.log("refreshing creds using AWS SSO")
+    browseAndTrackRedirects(props['awssso_subdomain'])
+}
+
+function doNothing(){}
+
+const credExtractors = {
+    "google": googleWorkspaceExtractor,
+    "awssso": awsSSOExtractor,
+    "none": doNothing
+}
+
+function awsInit(props, port=null, jobType='refresh'){
+    let idp_name=props['idp_type']||"none"
+    const credExtractor = credExtractors[idp_name]
+    credExtractor(props, port, jobType)
+};
