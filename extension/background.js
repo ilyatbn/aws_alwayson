@@ -159,7 +159,7 @@ function refreshAwsTokensAndStsCredentials(props,port,samlResponse){
     });
 }
 
-function refreshAwsRoles(port,samlResponse){
+function refreshAwsRolesGoogleWorkspace(port,samlResponse){
     let data = "RelayState=&SAMLResponse="+encodeURIComponent(samlResponse)
     fetch(awsSamlUrl, {
         method: "POST",
@@ -187,7 +187,6 @@ function refreshAwsRoles(port,samlResponse){
         errHandler(port, msg)
     });
 }
-
 
 function fetchSts(roleArn, principalArn, samlResponse, props, port){
     let STSUrl = `${awsStsUrl}/?Version=2011-06-15&Action=AssumeRoleWithSAML&RoleArn=${roleArn}&PrincipalArn=${principalArn}&SAMLAssertion=${encodeURIComponent(samlResponse.trim())}&AUTHPARAMS&DurationSeconds=${props.session_duration}`
@@ -250,7 +249,7 @@ function googleWorkspaceExtractor(props, port=null, jobType='refresh'){
                     let samlResponse=result.match(googleSsoRegex)[1]
                     switch (jobType) {
                         case 'role_refresh':
-                            refreshAwsRoles(port, samlResponse)
+                            refreshAwsRolesGoogleWorkspace(port, samlResponse)
                           break;
                         default:
                             refreshAwsTokensAndStsCredentials(props, port, samlResponse)
@@ -272,73 +271,119 @@ function googleWorkspaceExtractor(props, port=null, jobType='refresh'){
         errHandler(port, msg)
     });    
 }
-async function browseAndTrackRedirects(awssso_subdomain) {
-    let capturedUrls = [];
-    const timeout = 30000;
-    let timeoutId;
 
-    const webRequestAPI = getApi().webRequest
-    const handleRedirect = (details) => {
-        console.log(details.url)
-        capturedUrls.push(details.url);
-    };
+async function fetchSSOData(headers, region, port) {
+    const baseURL = `https://portal.sso.${region}.amazonaws.com/instance`;
 
-    try {
-        // const filter = { urls: ["https://*.awsapps.com/*"] };
-        const filter = { urls: ["<all_urls>"] };
-        webRequestAPI.onBeforeRequest.addListener(handleRedirect, filter);
-
-        if (chrome.offscreen && chrome.offscreen.createDocument) {
-            // Use Offscreen Documents (Chrome/Edge only)
-            console.log(`Using Offscreen doc, subdomain: ${awssso_subdomain}`);
-            if (await chrome.offscreen.hasDocument()) {
-                await chrome.offscreen.closeDocument();
-            }
-            const offscreenUrl = chrome.runtime.getURL(`offscreen.html?subdomain=${awssso_subdomain}`);
-            await chrome.offscreen.createDocument({
-                url: offscreenUrl,
-                reasons: ["DOM_SCRAPING"],
-                justification: "Login to AWS SSO uses javascripts to generate session tokens based on our login information.",
-            });
-
-            // Wait for the timeout
-            timeoutId = setTimeout(async () => {
-                console.log("Timeout reached. Redirects captured:", capturedUrls);
-                await chrome.offscreen.closeDocument();
-            }, timeout);
-        } else {
-            // Fallback for Firefox or environments without Offscreen Documents
-            console.log("Using Hidden Tab");
-            const tab = await getApi().tabs.create({
-                url: targetUrl,
-                active: false,
-            });
-
-            timeoutId = setTimeout(async () => {
-                console.log("Timeout reached. Redirects captured:", capturedUrls);
-                if (tab?.id) await browser?.tabs.remove(tab.id) || chrome.tabs.remove(tab.id);
-            }, timeout);
-        }
-    } catch (error) {
-        console.error("Error during navigation to target, ", targetUrl, error);
-    } finally {
-        if (timeoutId) clearTimeout(timeoutId);
-        webRequestAPI.onBeforeRequest.removeListener(handleRedirect);
+    // Fetch app instances
+    const appInstancesResponse = await fetch(`${baseURL}/appinstances`, {
+      method: "GET",
+      headers: headers
+    });
+    const appInstancesData = await appInstancesResponse.json();
+    
+    let i=0
+    // Iterate over each app instance
+    for (const app of appInstancesData.result) {
+      const accountId = app.searchMetadata.AccountId;
+      const profilesResponse = await fetch(`${baseURL}/appinstance/${app.id}/profiles`, {
+        method: "GET",
+        headers: headers
+      });
+      const profilesData = await profilesResponse.json();
+      
+      profilesData.result.forEach(profile => {
+        storage.set({
+            [`role${i}`] : `${accountId}:${profile.name}`,
+            [`role${i}_name`] : profile.name,
+            [`role${i}_acc`] : accountId,
+        })
+        ++i
+        console.log(`${accountId}:${profile.name}`);
+    });
     }
+    storage.set({'roleCount': i})
+    if (port) port.postMessage('roles_refreshed')
+  }
+
+  
+async function extractAwsSSOToken(awssso_subdomain, port) {
+    let targetUrl = `https://${awssso_subdomain}.awsapps.com/start/`;
+    
+    try {
+      console.log(`Starting navigation to: ${targetUrl}`);
+      // Create a new tab using Chrome extension API
+      const tab = await new Promise((resolve, reject) => {
+        getApi().tabs.create({ url: targetUrl, active: false }, (newTab) => {
+          if (getApi().runtime.lastError) {
+            reject(new Error(getApi().runtime.lastError.message));
+          } else {
+            resolve(newTab);
+          }
+        });
+      });
+
+      getApi().webRequest.onSendHeaders.addListener(
+        (details) => {
+            if (details.url.endsWith('/whoAmI')) {
+                const header = details.requestHeaders.find(h => h.name.toLowerCase() === 'x-amz-sso-bearer-token');
+                if (header) {
+                    let headers = details.requestHeaders
+                    let region = details.url.split(".")[2]
+                    let headersObject = headers.reduce((acc, { name, value }) => {
+                        acc[name] = value;
+                        return acc;
+                      }, {});    
+                
+                    storage.set({ amz_hdr: headersObject });
+                    storage.set({ amz_rgn: region });
+
+                    fetchSSOData(headersObject, region, port)
+
+                    getApi().tabs.remove(tab.id)
+                }
+              }
+        },
+        { urls: ["*://*.amazonaws.com/*"], tabId: tab.id },
+        ["requestHeaders"]
+      );
+    } catch (error) {
+        msg `Error during fetch from awsapps.com: ${error}`
+        errHandler(port, msg)
+        console.error(`Error in browseAndTrackRedirects: ${error.message}`);
+        throw error;
+    }
+  }
+
+
+function refreshAwsRolesAwsSSO(port) {
+    storage.set({'last_msg':'success'});
+    if (port) port.postMessage('sts_ready');
 }
+
 
 function awsSSOExtractor(props, port=null, jobType='refresh'){
     console.log("refreshing creds using AWS SSO")
-    browseAndTrackRedirects(props['awssso_subdomain'])
+    // if no amz in local storage, do browseAndTrackRedirects.
+    switch (jobType) {
+        case 'role_refresh':
+            extractAwsSSOToken(props['awssso_subdomain'], port)
+            break;
+        default:
+            refreshAwsRolesAwsSSO(port)
+    }
 }
 
+
 function doNothing(){}
+
 
 const credExtractors = {
     "google": googleWorkspaceExtractor,
     "awssso": awsSSOExtractor,
     "none": doNothing
 }
+
 
 function awsInit(props, port=null, jobType='refresh'){
     let idp_name=props['idp_type']||"none"

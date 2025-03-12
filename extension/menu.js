@@ -38,32 +38,67 @@ function handleTextboxes(props){
     }
   });
 };
+function setStsButton(item, props) {
+  if(props.last_msg.includes('err')){
+      $(item).css("background-image","url(/img/err.png)");
+      $(item).css("visibility","visible");
+      $(item).css("pointer-events","none");
+      $("#msg").text(props.last_msg_detail);
+    } else {
+      $(item).css("visibility","visible");
+    }
+}
 
 function populateCheckboxesAndButtons(props){
-  //get the currently checked checkbox
   if (typeof props.checked !== 'undefined') {
+    //get the currently checked checkbox
     let dataIndex = $(`#${props.checked}`).attr("data-index");
     //find the checkbox with the same data-index as the role and set it as checked.
     $(`input[id^='enable'][type='checkbox'][data-index=${dataIndex}]`).each(function(){
       $(this).prop("checked", true);
     });
-    //enable the relevant sts button if something is already checked.
-    $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function(){
-      if(props.last_msg.includes('err')){
-          $(this).css("background-image","url(/img/err.png)");
-          $(this).css("visibility","visible");
-          $(this).css("pointer-events","none");
-          $("#msg").text(props.last_msg_detail);
-        } else {
-          $(this).css("visibility","visible");
-        }
-    });
+    if (props.idp_type==="awssso") {
+      // in aws sso, we enable all sso checkboxes..
+      $(`[id^='sts_button']`).each(function(){
+        setStsButton(this, props)
+      });
+    }
+    else {  
+      //enable the relevant sts button if something is already checked.
+      $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function(){
+        setStsButton(this, props)
+      });
+    }
   }
+  
   //if autofill is enabled make all textboxes readonly
   if(props.autofill==1) {
     $('#autofill_btn').css({"background-color":"#ff5400","--enabled":1})
   }
 };
+
+async function exportStsToClipboard(platform, credentials) {
+  let stsCommand
+  switch (platform.toLowerCase()) {
+    case 'windows':
+    case 'win32':
+        stsCommand = "set"
+        break;
+    default:
+        stsCommand = "export"
+  }
+  let stscli = [
+    `${stsCommand} AWS_ACCESS_KEY_ID=${credentials.awsAccessKeyId||credentials.accessKeyId}`,
+    `${stsCommand} AWS_SECRET_ACCESS_KEY=${credentials.awsSecretAccessKey||credentials.secretAccessKey}`,
+    `${stsCommand} AWS_SESSION_TOKEN=${credentials.awsSessionToken||credentials.sessionToken}`,
+    `${stsCommand} AWS_SESSION_EXPIRATION=${credentials.awsExpiration||credentials.expiration}`,
+  ]
+  navigator.clipboard.writeText(stscli.join("&&")).then(() => {
+    alert("token copied to clipboard");
+  }, () => {
+    alert("failed copying to clipboard");
+  });
+}
 
 async function buildMenu(props){
   for (let i = 0; i < parseInt(props.roleCount); i++) {
@@ -181,27 +216,32 @@ async function main(){
     storage.set(obj);
   });
   //get the STS token from storage when clicking the CLI button.
-  $('[id^="sts_button"]').click(function() {
+  $('[id^="sts_button"]').click(async function() {
     let index = $(this).attr("data-index")
-    if ($(`#enable${index}`).prop("checked")){
-      storage.get(["platform","awsAccessKeyId","awsSecretAccessKey","awsSessionToken","awsExpiration"], function(data) {
-        let stsCommand
-        switch (data.platform.toLowerCase()) {
-          case 'windows':
-          case 'win32':
-              stsCommand = "set"
-              break;
-          default:
-              stsCommand = "export"
-        }
-        let stscli = `${stsCommand} AWS_ACCESS_KEY_ID=${data.awsAccessKeyId} && ${stsCommand} AWS_SECRET_ACCESS_KEY=${data.awsSecretAccessKey} && ${stsCommand} AWS_SESSION_TOKEN=${data.awsSessionToken} && ${stsCommand} AWS_SESSION_EXPIRATION=${data.awsExpiration}`
-        navigator.clipboard.writeText(stscli).then(() => {
-          alert("token copied to clipboard");
-        }, () => {
-          alert("failed copying to clipboard");
-        });
-    });
-  }
+
+    // in aws sso, clicking the cli command fetches the data dynamically.
+    if (props.idp_type==="awssso") {
+      let accountId = props[`role${index}_acc`]
+      let role = props[`role${index}_name`]
+      let region = props.amz_rgn
+      let headers=props.amz_hdr
+      let baseUrl = `https://portal.sso.${region}.amazonaws.com/federation/credentials?account_id=${accountId}&role_name=${role}`
+
+      const credsResponse = await fetch(baseUrl, {
+        method: "GET",
+        headers: headers
+      });
+      const creds = await credsResponse.json();
+      exportStsToClipboard(props.platform, creds.roleCredentials)
+      console.log(creds.roleCredentials)
+    }
+    else {
+      if ($(`#enable${index}`).prop("checked")){
+        storage.get(["platform","awsAccessKeyId","awsSecretAccessKey","awsSessionToken","awsExpiration"], function(data) {
+          exportStsToClipboard(data.platform, data)
+      });
+      }
+    }
 });
   //Action when a checkbox is changed
   $("input[id^='enable'][type='checkbox']").change(function() {
