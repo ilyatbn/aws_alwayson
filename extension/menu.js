@@ -2,7 +2,8 @@ const storage = getApi().storage.local
 //default values for options. 
 var defaults = {organization_domain: '', google_spid: '', google_idpid: '',
 saml_provider: 'gsuite', refresh_interval: 59, session_duration: 3600, 
-platform: getPlatform(), clientupdate: false, idp_type: 'google'
+platform: getPlatform(), clientupdate: false, idp_type: 'google',
+refresh_interval_sso: 360, awssso_subdomain: ''
 }
 
 function getApi() {
@@ -100,6 +101,24 @@ async function exportStsToClipboard(platform, credentials) {
   });
 }
 
+async function refreshRolesBackend(){
+  let port = chrome.runtime.connect({
+    name: "talk to background.js"
+  });       
+  port.postMessage('role_refresh');
+  port.onMessage.addListener(function(msg) {
+    if (msg=='roles_refreshed'){
+      location.reload();
+    } else if (msg.includes('err')) {
+      storage.get(['last_msg_detail'], function(result){
+        $("#msg").text(result.last_msg_detail);
+      })            
+    } else {
+      console.log("Service worker response:" + msg);
+    }
+  });  
+}
+
 async function buildMenu(props){
   for (let i = 0; i < parseInt(props.roleCount); i++) {
     jQuery('<div>', {
@@ -175,21 +194,7 @@ async function main(){
     if($(this).css("--enabled") == 0){   
       storage.set({"autofill": 1})
       $(this).css({"background-color":"#ff5400","--enabled":1})
-      let port = chrome.runtime.connect({
-        name: "talk to background.js"
-      });       
-      port.postMessage('role_refresh');
-      port.onMessage.addListener(function(msg) {
-        if (msg=='roles_refreshed'){
-          location.reload();
-        } else if (msg.includes('err')) {
-          storage.get(['last_msg_detail'], function(result){
-            $("#msg").text(result.last_msg_detail);
-          })            
-        } else {
-          console.log("Service worker response:" + msg);
-        }
-      });  
+      refreshRolesBackend()
     } else {
       storage.set({"autofill": 0})
       $(this).css({"background-color":"#4d4d4d","--enabled":0})
@@ -232,8 +237,14 @@ async function main(){
         headers: headers
       });
       const creds = await credsResponse.json();
-      exportStsToClipboard(props.platform, creds.roleCredentials)
-      console.log(creds.roleCredentials)
+      if (credsResponse.ok) {
+        exportStsToClipboard(props.platform, creds.roleCredentials)
+        // console.log(creds.roleCredentials)
+      }
+      else {
+        console.log(`response from federation endpoint was not ok, ${creds.message}`)
+        refreshRolesBackend()
+      }
     }
     else {
       if ($(`#enable${index}`).prop("checked")){
@@ -248,10 +259,15 @@ async function main(){
     $("#msg").text("");
     let id = $(this).attr("id")
     let dataIndex = $(this).attr("data-index")
-    // hide all sts buttons
-    $("[id^='sts_button']").each(function(){
-        $(this).css("visibility","hidden");
-    })
+    if (props.idp_type==="awssso") {
+      // in aws sso we do not hide anything since they are all available.
+    }
+    else{
+      // hide all sts buttons
+      $("[id^='sts_button']").each(function(){
+          $(this).css("visibility","hidden");
+      })
+    }
     if(!this.checked){
         let port = chrome.runtime.connect({
           name: "talk to background.js"

@@ -110,3 +110,6 @@ v1.2.1.1
 - Github Action that build and adds the Golang client when creating a release
 - fixed install script for Linux Golang client. Thanks @iSWORD for the heads up.
 - moved todo to a Github project.
+___
+v1.3.0
+- AWS SSO support. Should technically work seamlessly with any identity provider you have configured.

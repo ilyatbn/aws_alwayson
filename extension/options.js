@@ -45,7 +45,8 @@ function loadOptions() {
     })
   });
   storage.get({organization_domain, google_spid, google_idpid, saml_provider,
-    refresh_interval, session_duration, roleCount, platform, awssso_subdomain}, function(props) {
+    refresh_interval, session_duration, roleCount, platform, awssso_subdomain,
+    refresh_interval_sso}, function(props) {
       $(".txtbox").each(function() {
         $(this).val(props[$(this).prop("id")])
       })

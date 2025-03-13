@@ -22,6 +22,13 @@ const requestHeaders = {
     "Accept-Language": "en-US,en;q=0.9"
 }
 const storage = getApi().storage.local
+const credExtractors = {
+    "google": googleWorkspaceExtractor,
+    "awssso": awsSSOExtractor,
+    "none": doNothing
+}
+
+function doNothing(){}
 
 function getApi() {
   if (typeof chrome !== "undefined") {
@@ -56,54 +63,6 @@ class portWithExceptions {
     }
 }
 
-getApi().runtime.onStartup.addListener(function() {
-    storage.get(null, function(props) {
-        if (props['autofill']===undefined) storage.set({"autofill":0})
-        if (props['autofill']==1) {
-            awsInit(props, null, 'role_refresh')
-        }
-        if (confCheck(props)) awsInit(props)
-    })
-})
-
-getApi().alarms.onAlarm.addListener(function( alarm ) {
-    storage.get(null, function(props) {
-        awsInit(props);
-    })
-});
-
-async function main() {
-    getApi().runtime.onConnect.addListener(function(port) {
-        let portEx = new portWithExceptions(port);
-        port.onMessage.addListener(async function(msg) {
-            //Stop all background schedule jobs.
-            if (msg==='refreshoff'){
-                storage.set({'checked':0});
-                getApi().alarms.clear("refreshToken");
-            }
-            //Start background role refresh
-            if (msg==='refreshon')
-            {
-                storage.get(null, function(props) {
-                    if(confCheck(props)){
-                        getApi().alarms.create('refreshToken', { periodInMinutes: parseInt(props.refresh_interval) });
-                        awsInit(props, portEx);
-                    } else {
-                        portEx.postError("One or more option isn't configured properly.")
-                    }
-                })
-            }
-            //Start role refresh
-            if (msg=='role_refresh') {
-                storage.get(null, function(props){
-                    if (confCheck(props)) awsInit(props, portEx, msg)
-                })
-            }
-        });
-    });    
-}
-
-main()
 
 function confCheck(props){
     // validate relevant params for idp type
@@ -123,6 +82,7 @@ function confCheck(props){
     return false
 }
 
+
 function errHandler(port, msg){
     if (port) {
         port.postError(msg);
@@ -131,6 +91,7 @@ function errHandler(port, msg){
         storage.set({'last_msg':'err','last_msg_detail':msg});
     }
 }
+
 
 function refreshAwsTokensAndStsCredentials(props,port,samlResponse){
     let role = props[props.checked]
@@ -158,6 +119,7 @@ function refreshAwsTokensAndStsCredentials(props,port,samlResponse){
         errHandler(port, msg)
     });
 }
+
 
 function refreshAwsRolesGoogleWorkspace(port,samlResponse){
     let data = "RelayState=&SAMLResponse="+encodeURIComponent(samlResponse)
@@ -188,6 +150,7 @@ function refreshAwsRolesGoogleWorkspace(port,samlResponse){
     });
 }
 
+
 function fetchSts(roleArn, principalArn, samlResponse, props, port){
     let STSUrl = `${awsStsUrl}/?Version=2011-06-15&Action=AssumeRoleWithSAML&RoleArn=${roleArn}&PrincipalArn=${principalArn}&SAMLAssertion=${encodeURIComponent(samlResponse.trim())}&AUTHPARAMS&DurationSeconds=${props.session_duration}`
     fetch(STSUrl, {
@@ -206,18 +169,7 @@ function fetchSts(roleArn, principalArn, samlResponse, props, port){
         }
         // update local client with the aws credentials
         if (props['clientupdate']) {
-            fetch("http://localhost:31339/update", {
-                method: "POST",
-                headers: {"Content-Type":"application/json", "Accept": "application/json"},
-                body: JSON.stringify(credobj)
-            }).then((response) => response.text()).then((data) => {
-                if (data != "ok") {
-                    errHandler(port, data)
-                }
-            }).catch((error) => {
-                let msg = `Error updating local client:${error}`
-                errHandler(port, msg)
-            });
+            updateLocalClientCreds(credobj, port)
         }
 
         storage.set({'last_msg':'success'});
@@ -299,22 +251,38 @@ async function fetchSSOData(headers, region, port) {
             [`role${i}_acc`] : accountId,
         })
         ++i
-        console.log(`${accountId}:${profile.name}`);
     });
     }
     storage.set({'roleCount': i})
     if (port) port.postMessage('roles_refreshed')
   }
 
-  
+
+function updateLocalClientCreds(creds, port){
+    console.log("updating local client with new sts creds")
+    let creds_str=JSON.stringify(creds)
+    fetch("http://localhost:31339/update", {
+        method: "POST",
+        headers: {"Content-Type":"application/json", "Accept": "application/json"},
+        body: creds_str
+    }).then((response) => response.text()).then((data) => {
+        if (data != "ok") {
+            errHandler(port, data)
+        }
+    }).catch((error) => {
+        let msg = `Error updating local client:${error}`
+        errHandler(port, msg)
+    });
+}
+
+
 async function extractAwsSSOToken(awssso_subdomain, port) {
     let targetUrl = `https://${awssso_subdomain}.awsapps.com/start/`;
     
     try {
-      console.log(`Starting navigation to: ${targetUrl}`);
       // Create a new tab using Chrome extension API
       const tab = await new Promise((resolve, reject) => {
-        getApi().tabs.create({ url: targetUrl, active: false }, (newTab) => {
+        getApi().tabs.create({ url: targetUrl, active: true }, (newTab) => {
           if (getApi().runtime.lastError) {
             reject(new Error(getApi().runtime.lastError.message));
           } else {
@@ -337,9 +305,7 @@ async function extractAwsSSOToken(awssso_subdomain, port) {
                 
                     storage.set({ amz_hdr: headersObject });
                     storage.set({ amz_rgn: region });
-
                     fetchSSOData(headersObject, region, port)
-
                     getApi().tabs.remove(tab.id)
                 }
               }
@@ -355,14 +321,56 @@ async function extractAwsSSOToken(awssso_subdomain, port) {
     }
   }
 
+async function getStsCredentialsFromAwsSSO(props, retry=false){
+    console.log("getting STS creds from AWS SSO federation")
+    let index=props.checked
+    let accountId = props[`${index}_acc`]
+    let role = props[`${index}_name`]
+    let region = props.amz_rgn
+    let headers=props.amz_hdr
+    let baseUrl = `https://portal.sso.${region}.amazonaws.com/federation/credentials?account_id=${accountId}&role_name=${role}`
+    // console.log(baseUrl)
+    const credsResponse = await fetch(baseUrl, {
+      method: "GET",
+      headers: headers
+    });
+    const creds = await credsResponse.json();
+    if (credsResponse.ok) {
+      return creds.roleCredentials
+    }
+    else {
+      console.log(`response from federation endpoint was not ok, ${creds.message}`)
+      awsSSOExtractor(props,port=null,jobType='role_refresh')
+      if (!retry) {
+        console.log("retrying sts creds fetch")
+        getStsCredentialsFromAwsSSO(props, retry=true)
+      }
+    }    
+}
 
-function refreshAwsRolesAwsSSO(port) {
+async function refreshAwsRolesAwsSSO(port) {
+    let props = await storage.get(null)
+    let creds=await getStsCredentialsFromAwsSSO(props)
+    // console.log(creds)
+    let credsObj = {
+        "AccessKeyId": creds.accessKeyId,
+        "SecretAccessKey": creds.secretAccessKey,
+        "SessionToken": creds.sessionToken,
+        "Expiration": creds.expiration.toString(),
+    }
+    // update local client with the aws credentials
+    if (props['clientupdate']) {
+        updateLocalClientCreds(credsObj, port)
+    }    
     storage.set({'last_msg':'success'});
-    if (port) port.postMessage('sts_ready');
+    if (port) {
+        console.log(`port is ${port}`)
+        port.postMessage('sts_ready');
+    }
 }
 
 
-function awsSSOExtractor(props, port=null, jobType='refresh'){
+async function awsSSOExtractor(props, port=null, jobType='refresh'){
     console.log("refreshing creds using AWS SSO")
     // if no amz in local storage, do browseAndTrackRedirects.
     switch (jobType) {
@@ -375,18 +383,71 @@ function awsSSOExtractor(props, port=null, jobType='refresh'){
 }
 
 
-function doNothing(){}
+getApi().runtime.onStartup.addListener(function() {
+    storage.get(null, function(props) {
+        if (props['autofill']===undefined) storage.set({"autofill":0})
+        if (props['autofill']==1) {
+            awsInit(props, null, 'role_refresh')
+        }
+        if (confCheck(props)) awsInit(props)
+    })
+})
 
-
-const credExtractors = {
-    "google": googleWorkspaceExtractor,
-    "awssso": awsSSOExtractor,
-    "none": doNothing
-}
+// Handler for all alarms configured in "main"
+getApi().alarms.onAlarm.addListener(function( alarm ) {
+    storage.get(null, function(props) {
+        if (alarm.name==='refreshToken'){
+            console.log("token refresh alarm triggered")
+            awsInit(props, null, 'refresh');
+        }
+        else if(alarm.name==='refreshSSO') {
+            console.log("role refresh alarm triggered")
+            awsInit(props, null, 'role_refresh');
+        }
+    })
+});
 
 
 function awsInit(props, port=null, jobType='refresh'){
-    let idp_name=props['idp_type']||"none"
+    let idp_name = props['idp_type']||"none"
     const credExtractor = credExtractors[idp_name]
     credExtractor(props, port, jobType)
 };
+
+
+async function main() {
+    getApi().runtime.onConnect.addListener(function(port) {
+        let portEx = new portWithExceptions(port);
+        port.onMessage.addListener(async function(msg) {
+            let props = await storage.get(null)
+            //Stop all background schedule jobs.
+            if (msg==='refreshoff'){
+                storage.set({'checked':0});
+                getApi().alarms.clear("refreshToken");
+            }
+            //Start background role refresh
+            if (msg==='refreshon')
+            {
+                if(confCheck(props)){
+                    getApi().alarms.create('refreshToken', { periodInMinutes: parseInt(props.refresh_interval) });
+                    awsInit(props, portEx);
+                } else {
+                    portEx.postError("One or more option isn't configured properly.")
+                }
+            }
+            //Start role refresh
+            if (msg=='role_refresh') {
+                if (confCheck(props)) {
+                    awsInit(props, portEx, msg)
+                    if (props.idp_type === "awssso") {
+                        console.log("creating alarm for role refresh")
+                        getApi().alarms.create('refreshSSO', { periodInMinutes: parseInt(props.refresh_interval_sso) });
+                    }
+                }
+            }
+        });
+    });
+}
+
+
+main()
