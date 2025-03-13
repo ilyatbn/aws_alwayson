@@ -39,12 +39,22 @@ function handleTextboxes(props){
     }
   });
 };
+
 function setStsButton(item, props) {
   if(props.last_msg.includes('err')){
       $(item).css("background-image","url(/img/err.png)");
       $(item).css("visibility","visible");
       $(item).css("pointer-events","none");
       $("#msg").text(props.last_msg_detail);
+    } else {
+      $(item).css("visibility","visible");
+    }
+}
+
+function setConsoleButton(item, props) {
+  if(props.last_msg.includes('err')){
+      $(item).css("visibility","hidden");
+      $(item).css("pointer-events","none");
     } else {
       $(item).css("visibility","visible");
     }
@@ -59,9 +69,12 @@ function populateCheckboxesAndButtons(props){
       $(this).prop("checked", true);
     });
     if (props.idp_type==="awssso") {
-      // in aws sso, we enable all sso checkboxes..
+      // in aws sso, we enable all sso and console buttons..
       $(`[id^='sts_button']`).each(function(){
         setStsButton(this, props)
+      });
+      $(`[id^='console_btn']`).each(function(){
+        setConsoleButton(this, props)
       });
     }
     else {  
@@ -147,6 +160,12 @@ async function buildMenu(props){
       "data-index": i
     }).appendTo(`#item${i}`);
     
+    jQuery('<button>', {
+      class:"button console_btn",
+      id: `console_btn${i}`,
+      "data-index": i
+    }).appendTo(`#item${i}`);
+    
     jQuery('<label>', {
       id: `label${i}`,
       class:"switch btncls"
@@ -221,6 +240,18 @@ async function main(){
     storage.set(obj);
   });
   //get the STS token from storage when clicking the CLI button.
+  $('[id^="console_btn"]').click(async function() {
+    let index = $(this).attr("data-index")
+
+    // in aws sso, clicking the cli command fetches the data dynamically.
+    if (props.idp_type==="awssso") {
+      let accountId = props[`role${index}_acc`]
+      let role = props[`role${index}_name`]
+      let headers=props.amz_hdr
+      let targetUrl = `https://perception-point.awsapps.com/start/#/console?account_id=${accountId}&role_name=${role}`
+      getApi().tabs.create({ url: targetUrl, active: true })
+    }
+  });
   $('[id^="sts_button"]').click(async function() {
     let index = $(this).attr("data-index")
 

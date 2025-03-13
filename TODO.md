@@ -1,6 +1,5 @@
 ## todo for sso beta
-- UI: add an amazon button (Grayish) to each account to open the console in a new tab.
-- automate account chooser using the domain. (inject script) 
+- automate account chooser using the domain. (inject script). if working, can hide the window.
 
 ## todo for sso release
 - remove all new manual permission. 
