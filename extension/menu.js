@@ -3,7 +3,8 @@ const storage = getApi().storage.local
 var defaults = {organization_domain: '', google_spid: '', google_idpid: '',
 saml_provider: 'gsuite', refresh_interval: 59, session_duration: 3600, 
 platform: getPlatform(), clientupdate: false, idp_type: 'google',
-refresh_interval_sso: 360, awssso_subdomain: ''
+refresh_interval_sso: 360, awssso_subdomain: '', saml_idp_domain: '',
+sso_tab_visible: "true"
 }
 
 function getApi() {
@@ -247,7 +248,6 @@ async function main(){
     if (props.idp_type==="awssso") {
       let accountId = props[`role${index}_acc`]
       let role = props[`role${index}_name`]
-      let headers=props.amz_hdr
       let targetUrl = `https://perception-point.awsapps.com/start/#/console?account_id=${accountId}&role_name=${role}`
       getApi().tabs.create({ url: targetUrl, active: true })
     }

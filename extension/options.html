@@ -9,7 +9,7 @@
     <body>
 
     <div class="topbar">
-        <button class="tablinks" id="options_main">Main</button>
+        <button class="tablinks" id="options_main">General</button>
         <button class="tablinks" id="options_google">Google</button>
         <button class="tablinks" id="options_awssso">AWS SSO</button>
     </div>
@@ -26,18 +26,13 @@
             <td><div class="layout"></div><img class="helpimg" id="infoPic" alt="Select one of the supported Identity Provider services." src="/img/moreinfo.png"></td>
         </div>
         <div class="item">
-            <div class="a">STS Token session duration in seconds.</div>
-            <input type="text" value="" id="session_duration" placeholder="Token session duration in seconds" class="txtbox" />
-            <td><div class="layout"></div><img class="helpimg" id="infoPic7" alt="Make sure you do not exceed the value configured in the IAM role. If you don't know it, keep at the default of 1 hour." src="/img/moreinfo.png"></td>
-        </div>
-        <div class="item">
             <div class="a">OS platform for STS CLI.</div>
             <input type="text" value="" id="platform" class="txtbox" />
             <td><div class="layout"></div><img class="helpimg" id="infoPic8" alt="Each OS platform has it's own command-line for setting enviroment variables. You can change it here." src="/img/moreinfo.png"></td>
         </div>
         <div class="item">
             <div class="a">Role count</div>
-                <input type="text" value="" id="roleCount" placeholder="Role count in menu" class="txtbox" />
+            <input type="text" value="" id="roleCount" placeholder="Role count in menu" class="txtbox" />
             <td><div class="layout"></div><img class="helpimg" id="infoPic" alt="The amount of roles you will be using in the menu." src="/img/moreinfo.png"></td>
         </div>        
         <div class="item">
@@ -72,6 +67,11 @@
             <input type="text" value="" id="refresh_interval" placeholder="Token auto-refresh interval" class="txtbox" />
             <td><div class="layout"></div><img class="helpimg" id="infoPic6" alt="Keep this under 60. For some reason, AWS Web console session timeout is set to 1 hour maximum even if your IAM role is configured for more." src="/img/moreinfo.png"></td>
         </div>
+        <div class="item">
+            <div class="a">STS Token session duration in seconds.</div>
+            <input type="text" value="" id="session_duration" placeholder="Token session duration in seconds" class="txtbox" />
+            <td><div class="layout"></div><img class="helpimg" id="infoPic7" alt="Make sure you do not exceed the value configured in the IAM role. If you don't know it, keep at the default of 1 hour." src="/img/moreinfo.png"></td>
+        </div>
     </div>    
     <div id="options_awssso" class="grid-container"> 
         <div class="item">
@@ -80,10 +80,24 @@
             <td><div class="layout"></div><img class="helpimg" id="infoPic2" alt="used to start the SSO process using https://subdomain.awsapps.com" src="/img/moreinfo.png"></td>
         </div>
         <div class="item">
+            <div class="a">SAML IDP domain</div>
+            <input type="text" value="" id="saml_idp_domain" placeholder="Your IDP domain. Used for extension permissions. Leaven empty for Google Workspace." class="txtbox" />
+            <td><div class="layout"></div><img class="helpimg" id="infoPic2" alt="AWS SSO redirects to your custom domain for SAML authentication. We need to add permissions for the extension to access this domain. Can leave blank for Google Workspace" src="/img/moreinfo.png"></td>
+        </div>
+        <div class="item">
             <div class="a">SSO refresh interval (Minutes)</div>
             <input type="text" value="" id="refresh_interval_sso" placeholder="Token and accounts auto-refresh interval." class="txtbox" />
             <td><div class="layout"></div><img class="helpimg" id="infoPic6" alt="AWS SSO has a global token set for all accounts. This will trigger a new tab to open browse to the SSO login page." src="/img/moreinfo.png"></td>
-        </div>        
+        </div>
+        <div class="item">
+            <div class="a">Show SSO login process tab</div>
+                <select type="text" id="sso_tab_visible", class="dropdown">
+                    <option value="true">True</option>
+                    <option value="false">False</option>
+                </select>
+            <td><div class="layout"></div><img class="helpimg" id="infoPic" alt="Sometimes the tab for the SSO process needs to be visibule due to requring user interaction. Select False to hide it." src="/img/moreinfo.png"></td>
+        </div>
+
     </div>    
     </body>
 </html> 

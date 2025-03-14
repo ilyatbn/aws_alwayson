@@ -278,21 +278,22 @@ function updateLocalClientCreds(creds, port){
 
 async function extractAwsSSOToken(awssso_subdomain, port) {
     let targetUrl = `https://${awssso_subdomain}.awsapps.com/start/`;
-    
+    let props = await storage.get(null)
+    let sso_tab_visible = props.sso_tab_visible === "true"
+    console.log("tab active:",sso_tab_visible)
     try {
-      // Create a new tab using Chrome extension API
-      const tab = await new Promise((resolve, reject) => {
-        getApi().tabs.create({ url: targetUrl, active: true }, (newTab) => {
-          if (getApi().runtime.lastError) {
-            reject(new Error(getApi().runtime.lastError.message));
-          } else {
-            resolve(newTab);
-          }
+        // Create a new tab using Chrome extension API
+        const tab = await new Promise((resolve, reject) => {
+            getApi().tabs.create({ url: targetUrl, active: sso_tab_visible }, (newTab) => {
+                if (getApi().runtime.lastError) {
+                    reject(new Error(getApi().runtime.lastError.message));
+                } else {
+                    resolve(newTab);
+                }
+            });
         });
-      });
-
-      getApi().webRequest.onSendHeaders.addListener(
-        (details) => {
+        getApi().webRequest.onSendHeaders.addListener(
+            (details) => {
             if (details.url.endsWith('/whoAmI')) {
                 const header = details.requestHeaders.find(h => h.name.toLowerCase() === 'x-amz-sso-bearer-token');
                 if (header) {
@@ -340,7 +341,7 @@ async function getStsCredentialsFromAwsSSO(props, retry=false){
     }
     else {
       console.log(`response from federation endpoint was not ok, ${creds.message}`)
-      awsSSOExtractor(props,port=null,jobType='role_refresh')
+      awsSSOExtractor(props, null, 'role_refresh')
       if (!retry) {
         console.log("retrying sts creds fetch")
         getStsCredentialsFromAwsSSO(props, retry=true)

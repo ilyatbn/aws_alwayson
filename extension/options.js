@@ -9,44 +9,109 @@ function getApi() {
     }
   }
 }
+
+
+const awsSsoPermissions = {
+  permissions: ["tabs"],
+  origins: [
+    "https://*.awsapps.com/*",
+    "https://*.amazonaws.com/*"
+  ]
+};
+
+async function permissionValidator(option, value) {
+  let props = await storage.get(null)
+  console.log(`validating opt ${option}`)
+  if (option === "saml_idp_domain") {
+    if (props.saml_idp_domain!=='' && props.saml_idp_domain!==value) {
+      console.log(`updated idp domain, requesting permissions for ${value}`)
+      const extraIdpPermission = {
+        origins: [`https://${value}/*`]
+        }      
+      getApi().permissions.contains(extraIdpPermission, (result) => {
+        if (result) {
+          console.log("Permissions already granted.");
+        } else {
+          getApi().permissions.request(extraIdpPermission, (granted) => {
+            if (granted) {
+              console.log(`user granted permissions for domain ${value}`);
+              return true
+            } else {
+              console.log(`user did not grant permissions for domain ${value}`);
+              return false
+            }
+          });
+        }
+      });
+    }
+  }
+  if (option === "idp_type") {
+    if (value==="awssso") {
+      console.log("enabled AWS SSO. adding new permissions")
+      getApi().permissions.contains(awsSsoPermissions, (result) => {
+        if (result) {
+          console.log("Permissions already granted.");
+        } else {
+          getApi().permissions.request(awsSsoPermissions  , (granted) => {
+            if (granted) {
+              console.log("Permissions granted!");
+              return true
+            } else {
+              console.log("Permissions denied.");
+              return false
+            }
+          });
+        }
+      });
+    }
+  }
+  return true
+}
 //Save options to local storage
-$(".txtbox").focusout(function() {
+$(".txtbox,select,:checkbox").focusout(async function() {
   let optionName = $(this).attr("id")
   let optionValue = $(this).val()
   let obj ={
     [optionName]:optionValue
   }
-  storage.set(obj);
+  let validated = await permissionValidator(optionName, optionValue)
+  if (validated) {
+    storage.set(obj);
+  }
+  else {
+    console.log("validation did not pass..")
+  }
 });
 
-//Save checkboxes values to local storage
-$(":checkbox").change(function() {
-  let optionName = $(this).attr("id")
-  let optionValue = $(this).prop("checked")
-  let obj ={
-    [optionName]:optionValue
-  }
-  storage.set(obj);
-});
-// Save dropdown menu options
-$('select').change(function() {
-  let optionName = $(this).attr("id")
-  let optionValue = $(this).val()
-  let obj ={
-    [optionName]:optionValue
-  }
-  storage.set(obj);
-});
+// //Save checkboxes values to local storage
+// $(":checkbox").change(async function() {
+//   let optionName = $(this).attr("id")
+//   let optionValue = $(this).prop("checked")
+//   let obj ={
+//     [optionName]:optionValue
+//   }
+//   storage.set(obj);
+// });
+// // Save dropdown menu options
+// $('select').change(async function() {
+//   let optionName = $(this).attr("id")
+//   let optionValue = $(this).val()
+//   let obj ={
+//     [optionName]:optionValue
+//   }
+//   validated = await permissionValidator(optionName, optionValue)
+//   if (validated) storage.set(obj);
+// });
 
 function loadOptions() {
-  storage.get({idp_type}, function(props) {
+  storage.get({idp_type,sso_tab_visible}, function(props) {
     $('select').each(function() {
       $(this).val(props[$(this).prop("id")])
     })
   });
   storage.get({organization_domain, google_spid, google_idpid, saml_provider,
     refresh_interval, session_duration, roleCount, platform, awssso_subdomain,
-    refresh_interval_sso}, function(props) {
+    refresh_interval_sso, awssso_subdomain, saml_idp_domain}, function(props) {
       $(".txtbox").each(function() {
         $(this).val(props[$(this).prop("id")])
       })

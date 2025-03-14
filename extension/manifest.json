@@ -13,20 +13,22 @@
     "permissions": [
     "storage",
     "alarms",
-    "webRequest", 
-    "tabs"
+    "webRequest" 
+    ],
+    "optional_permissions": [
+        "tabs"
     ],
     "host_permissions":[
      "https://accounts.google.com/*",
      "https://signin.aws.amazon.com/*",
      "https://console.aws.amazon.com/*",
      "https://sts.amazonaws.com/*",
-     "https://*.awsapps.com/*",
-     "http://*/*",
-     "https://*/*",
      "http://localhost/*"
     ],
-     "background": {
+    "optional_host_permissions": [
+      "https://*/*"
+    ],
+    "background": {
         "service_worker": "background.js",
         "type":"module"
       },

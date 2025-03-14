@@ -112,4 +112,12 @@ v1.2.1.1
 - moved todo to a Github project.
 ___
 v1.3.0
-- AWS SSO support. Should technically work seamlessly with any identity provider you have configured.
+- AWS SSO login support. should technically work seamlessly with any external identity provider, but untested.
+- Added optional permissions for AWS SSO to create tabs, as well as new domains.
+- Added optional permissions for custom IDP redirect domains from AWS SSO.
+- Reordered some options in the menu.
+- in AWS SSO, all accounts are now available for STS so enabled all the buttons.
+- in AWS SSO, the toggle now only updates the client perioducally.
+- in AWS SSO, the A button now refreshes the AWS SSO token globally every 6 hours (configurable)
+- in AWS SSO, added button to AWS console.
+- As far as I could see, "Multi Session" in AWS console works fine with the current code.
