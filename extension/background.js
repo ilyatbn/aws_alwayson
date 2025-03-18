@@ -254,6 +254,9 @@ async function fetchSSOData(headers, region, port) {
     });
     }
     storage.set({'roleCount': i})
+    const now = new Date().toISOString()
+    storage.set({'ssoLastRefresh': now})
+    console.log(`sso refreshed at: ${now}`)
     if (port) port.postMessage('roles_refreshed')
   }
 
@@ -295,8 +298,11 @@ async function extractAwsSSOToken(awssso_subdomain, port) {
         getApi().webRequest.onSendHeaders.addListener(
             (details) => {
             if (details.url.endsWith('/whoAmI')) {
+                console.log("whoAmI request intercepted")
                 const header = details.requestHeaders.find(h => h.name.toLowerCase() === 'x-amz-sso-bearer-token');
-                if (header) {
+                const header_auth = details.requestHeaders.find(h => h.name.toLowerCase() === 'authorization');
+                if (header||header_auth) {
+                    console.log("found bearer token")
                     let headers = details.requestHeaders
                     let region = details.url.split(".")[2]
                     let headersObject = headers.reduce((acc, { name, value }) => {
