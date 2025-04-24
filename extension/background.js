@@ -234,7 +234,9 @@ async function fetchSSOData(headers, region, port) {
     });
     const appInstancesData = await appInstancesResponse.json();
     
-    let i=0
+    // Create an array to store all roles with their account IDs
+    let allRoles = [];
+    
     // Iterate over each app instance
     for (const app of appInstancesData.result) {
       const accountId = app.searchMetadata.AccountId;
@@ -244,21 +246,34 @@ async function fetchSSOData(headers, region, port) {
       });
       const profilesData = await profilesResponse.json();
       
+      // Add each role to the array with its account ID
       profilesData.result.forEach(profile => {
-        storage.set({
-            [`role${i}`] : `${accountId}:${profile.name}`,
-            [`role${i}_name`] : profile.name,
-            [`role${i}_acc`] : accountId,
-        })
-        ++i
-    });
+        allRoles.push({
+          accountId: accountId,
+          name: profile.name,
+          roleString: `${accountId}:${profile.name}`
+        });
+      });
     }
-    storage.set({'roleCount': i})
-    const now = new Date().toISOString()
-    storage.set({'ssoLastRefresh': now})
-    console.log(`sso refreshed at: ${now}`)
-    if (port) port.postMessage('roles_refreshed')
-  }
+
+    // Sort roles by accountId
+    allRoles.sort((a, b) => a.accountId.localeCompare(b.accountId));
+
+    // Store sorted roles in storage
+    allRoles.forEach((role, index) => {
+      storage.set({
+        [`role${index}`]: role.roleString,
+        [`role${index}_name`]: role.name,
+        [`role${index}_acc`]: role.accountId,
+      });
+    });
+
+    storage.set({'roleCount': allRoles.length});
+    const now = new Date().toISOString();
+    storage.set({'ssoLastRefresh': now});
+    console.log(`sso refreshed at: ${now}`);
+    if (port) port.postMessage('roles_refreshed');
+}
 
 
 function updateLocalClientCreds(creds, port){
@@ -455,6 +470,5 @@ async function main() {
         });
     });
 }
-
 
 main()
