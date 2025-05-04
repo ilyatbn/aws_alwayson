@@ -191,14 +191,24 @@ function googleWorkspaceExtractor(props, port=null, jobType='refresh'){
                 throw msg
             }
             let accountIndex = accountData[1]
-            if(accountIndex==-1){
+            if(accountIndex===-1){
                 let msg = `${accountData[2]} is not logged in. Please login and try again.`
                 throw msg
             }
             console.log(`Refreshing credentials for ${accountData[2]}`)
             fetch(`${googleSsoUrl.replace('IDPID',props.google_idpid).replace('SPID',props.google_spid)}${accountIndex}`).then(response => {   
+                if(response.status===403) {
+                    console.log(response.text())
+                    let msg = `Access denied from Google Workspace SSO URL. verify google workspace app is enabled for the account.`
+                    throw msg
+                }
                 response.text().then(result => {
-                    let samlResponse=result.match(googleSsoRegex)[1]
+                    let samlResponse=result.match(googleSsoRegex)
+                    if (samlResponse===null) {
+                        let msg = `Could not parse SAMLResponse from google workspace sso url.`
+                        throw msg
+                    }
+                    samlResponse=samlResponse[1]
                     switch (jobType) {
                         case 'role_refresh':
                             refreshAwsRolesGoogleWorkspace(port, samlResponse)
