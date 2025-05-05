@@ -197,15 +197,14 @@ function googleWorkspaceExtractor(props, port=null, jobType='refresh'){
             }
             console.log(`Refreshing credentials for ${accountData[2]}`)
             fetch(`${googleSsoUrl.replace('IDPID',props.google_idpid).replace('SPID',props.google_spid)}${accountIndex}`).then(response => {   
-                if(response.status===403) {
-                    console.log(response.text())
-                    let msg = `Access denied from Google Workspace SSO URL. verify google workspace app is enabled for the account.`
-                    throw msg
-                }
                 response.text().then(result => {
+                    if(response.status===403) {
+                        let msg = `Access denied from Google Workspace SSO URL. verify google workspace app is enabled for the account.`
+                        throw msg
+                    }
                     let samlResponse=result.match(googleSsoRegex)
                     if (samlResponse===null) {
-                        let msg = `Could not parse SAMLResponse from google workspace sso url.`
+                        let msg = `Could not parse SAMLResponse from google workspace SSO URL.`
                         throw msg
                     }
                     samlResponse=samlResponse[1]
