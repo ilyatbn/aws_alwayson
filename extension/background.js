@@ -28,6 +28,9 @@ const credExtractors = {
     "none": doNothing
 }
 
+// Add this flag to track tab processing state
+let isProcessingTab = false;
+
 function doNothing(){}
 
 function getApi() {
@@ -304,53 +307,84 @@ function updateLocalClientCreds(creds, port){
 
 
 async function extractAwsSSOToken(awssso_subdomain, port) {
+    // Check if we're already processing a tab
+    if (isProcessingTab) {
+        console.log("Tab processing already in progress, skipping this request");
+        if (port) port.postMessage('tab_already_processing');
+        return;
+    }
+
     let targetUrl = `https://${awssso_subdomain}.awsapps.com/start/`;
     let props = await storage.get(null)
     let sso_tab_visible = props.sso_tab_visible === "true"
-    console.log("tab active:",sso_tab_visible)
+    console.log("tab active:", sso_tab_visible)
+    
     try {
+        isProcessingTab = true;
+        
         // Create a new tab using Chrome extension API
         const tab = await new Promise((resolve, reject) => {
             getApi().tabs.create({ url: targetUrl, active: sso_tab_visible }, (newTab) => {
                 if (getApi().runtime.lastError) {
+                    isProcessingTab = false;  // Reset flag on error
                     reject(new Error(getApi().runtime.lastError.message));
                 } else {
                     resolve(newTab);
                 }
             });
         });
+
+        // Set up a timeout to reset the flag in case something goes wrong
+        const timeoutId = setTimeout(() => {
+            isProcessingTab = false;
+            console.log("Tab processing timeout - resetting state");
+        }, 30000); // 30 second timeout
+
         getApi().webRequest.onSendHeaders.addListener(
             (details) => {
-            if (details.url.endsWith('/whoAmI')) {
-                console.log("whoAmI request intercepted")
-                const header = details.requestHeaders.find(h => h.name.toLowerCase() === 'x-amz-sso-bearer-token');
-                const header_auth = details.requestHeaders.find(h => h.name.toLowerCase() === 'authorization');
-                if (header||header_auth) {
-                    console.log("found bearer token")
-                    let headers = details.requestHeaders
-                    let region = details.url.split(".")[2]
-                    let headersObject = headers.reduce((acc, { name, value }) => {
-                        acc[name] = value;
-                        return acc;
-                      }, {});    
-                
-                    storage.set({ amz_hdr: headersObject });
-                    storage.set({ amz_rgn: region });
-                    fetchSSOData(headersObject, region, port)
-                    getApi().tabs.remove(tab.id)
+                if (details.url.endsWith('/whoAmI')) {
+                    console.log("whoAmI request intercepted")
+                    const header = details.requestHeaders.find(h => h.name.toLowerCase() === 'x-amz-sso-bearer-token');
+                    const header_auth = details.requestHeaders.find(h => h.name.toLowerCase() === 'authorization');
+                    if (header||header_auth) {
+                        console.log("found bearer token")
+                        let headers = details.requestHeaders
+                        let region = details.url.split(".")[2]
+                        let headersObject = headers.reduce((acc, { name, value }) => {
+                            acc[name] = value;
+                            return acc;
+                        }, {});    
+                    
+                        storage.set({ amz_hdr: headersObject });
+                        storage.set({ amz_rgn: region });
+                        fetchSSOData(headersObject, region, port)
+                        getApi().tabs.remove(tab.id)
+                        clearTimeout(timeoutId);  // Clear the timeout
+                        isProcessingTab = false;  // Reset the flag after successful processing
+                    }
                 }
-              }
-        },
-        { urls: ["*://*.amazonaws.com/*"], tabId: tab.id },
-        ["requestHeaders"]
-      );
+            },
+            { urls: ["*://*.amazonaws.com/*"], tabId: tab.id },
+            ["requestHeaders"]
+        );
+
+        // Add a listener for tab removal to reset the flag if the tab is closed manually
+        getApi().tabs.onRemoved.addListener(function onTabRemoved(tabId) {
+            if (tabId === tab.id) {
+                isProcessingTab = false;
+                clearTimeout(timeoutId);
+                getApi().tabs.onRemoved.removeListener(onTabRemoved);
+            }
+        });
+
     } catch (error) {
-        msg `Error during fetch from awsapps.com: ${error}`
+        isProcessingTab = false;  // Reset flag on error
+        let msg = `Error during fetch from awsapps.com: ${error}`
         errHandler(port, msg)
         console.error(`Error in browseAndTrackRedirects: ${error.message}`);
         throw error;
     }
-  }
+}
 
 async function getStsCredentialsFromAwsSSO(props, retry=false){
     console.log("getting STS creds from AWS SSO federation")
