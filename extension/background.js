@@ -434,7 +434,6 @@ async function refreshAwsRolesAwsSSO(port) {
     }
 }
 
-
 async function awsSSOExtractor(props, port=null, jobType='refresh'){
     console.log("refreshing creds using AWS SSO")
     // if no amz in local storage, do browseAndTrackRedirects.
@@ -446,7 +445,6 @@ async function awsSSOExtractor(props, port=null, jobType='refresh'){
             refreshAwsRolesAwsSSO(port)
     }
 }
-
 
 getApi().runtime.onStartup.addListener(function() {
     storage.get(null, function(props) {
@@ -480,6 +478,18 @@ function awsInit(props, port=null, jobType='refresh'){
 };
 
 
+async function alarmLock(alarmName, refreshInterval) {
+    const { alarmEnabled } = await storage.get(alarmName);
+    if (!alarmEnabled) {
+        // validate alarm is not already set anyway
+        const alarm = await getApi().alarms.get(alarmName);
+        if (!alarm) {
+            getApi().alarms.create(alarmName, { periodInMinutes: parseInt(refreshInterval) });
+            await storage.set({alarmKey: true});
+        }
+    }
+  }
+
 async function main() {
     getApi().runtime.onConnect.addListener(function(port) {
         let portEx = new portWithExceptions(port);
@@ -489,12 +499,13 @@ async function main() {
             if (msg==='refreshoff'){
                 storage.set({'checked':0});
                 getApi().alarms.clear("refreshToken");
+                await storage.set({"refreshToken": false});
             }
             //Start background role refresh
             if (msg==='refreshon')
             {
                 if(confCheck(props)){
-                    getApi().alarms.create('refreshToken', { periodInMinutes: parseInt(props.refresh_interval) });
+                    await alarmLock('refreshToken', props.refresh_interval)
                     awsInit(props, portEx);
                 } else {
                     portEx.postError("One or more option isn't configured properly.")
@@ -506,7 +517,7 @@ async function main() {
                     awsInit(props, portEx, msg)
                     if (props.idp_type === "awssso") {
                         console.log("creating alarm for role refresh")
-                        getApi().alarms.create('refreshSSO', { periodInMinutes: parseInt(props.refresh_interval_sso) });
+                        await alarmLock('refreshSSO', props.refresh_interval_sso)
                     }
                 }
             }
