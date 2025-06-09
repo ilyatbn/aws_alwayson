@@ -480,24 +480,30 @@ chrome.windows.onFocusChanged.addListener(async (windowId) => {
     let idp_name = props['idp_type']||"none"
     let nextRefreshTime = props['sso_next_refresh']||null
 
-    if (idp_name === "awssso"){
-        if (nextRefreshTime <= Date.now() && windowId !== chrome.windows.WINDOW_ID_NONE){
+    if (idp_name === "awssso" && windowId !== chrome.windows.WINDOW_ID_NONE){
+        const shouldRefresh = !nextRefreshTime || nextRefreshTime <= Date.now();
+        
+        if (shouldRefresh) {
+            console.log("SSO refresh needed, running role_refresh");
             const credExtractor = credExtractors[idp_name]
-            credExtractor(porps=props, jobType="role_refresh")
+            await credExtractor(props, null, "role_refresh");
+            
+            // Set next refresh time
+            const refreshIntervalMs = parseInt(props.refresh_interval_sso) * 60 * 1000; // Convert minutes to milliseconds
+            const newNextRefreshTime = Date.now() + refreshIntervalMs;
+            await storage.set({ 'sso_next_refresh': newNextRefreshTime });
+            console.log(`Next SSO refresh scheduled for: ${new Date(newNextRefreshTime)}`);
+        } else {
+            console.log(`SSO refresh not needed yet. Next refresh at: ${new Date(nextRefreshTime)}`);
         }
     }
-
-    const credExtractor = credExtractors[idp_name]
-    credExtractor(props, port, jobType)
 });
 
 
 function awsInit(props, port=null, jobType='refresh'){
     let idp_name = props['idp_type']||"none"
     console.log(`idp_name: ${idp_name}, jobType: ${jobType}`)
-    if (idp_name === "awssso" && jobType === "role_refresh"){
-        console.log(`this is handled by the onFocusChanged listener`)
-    } else {
+    if (port || idp_type!=="awssso"){
         const credExtractor = credExtractors[idp_name]
         credExtractor(props, port, jobType)
     }
