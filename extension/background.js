@@ -470,14 +470,39 @@ getApi().alarms.onAlarm.addListener(function( alarm ) {
     })
 });
 
+chrome.windows.onFocusChanged.addListener(async (windowId) => {
+    // get local storage items as props
+    // if props.idp_type is awssso and props.jobType is role_refresh, check if we need to refresh by using localstorage nextrefreshtime
+    // if we need to refresh and the window is focused, refresh the credentials using credExtractor
+    // set a new nextrefreshtime in localstorage based on props.refresh_interval_sso
+    // if the window is not focused, do nothing
+    let props = await storage.get(null)
+    let idp_name = props['idp_type']||"none"
+    let nextRefreshTime = props['sso_next_refresh']||null
+
+    if (idp_name === "awssso"){
+        if (nextRefreshTime <= Date.now() && windowId !== chrome.windows.WINDOW_ID_NONE){
+            const credExtractor = credExtractors[idp_name]
+            credExtractor(porps=props, jobType="role_refresh")
+        }
+    }
+
+    const credExtractor = credExtractors[idp_name]
+    credExtractor(props, port, jobType)
+});
+
 
 function awsInit(props, port=null, jobType='refresh'){
     let idp_name = props['idp_type']||"none"
-    const credExtractor = credExtractors[idp_name]
-    credExtractor(props, port, jobType)
+    console.log(`idp_name: ${idp_name}, jobType: ${jobType}`)
+    if (idp_name === "awssso" && jobType === "role_refresh"){
+        console.log(`this is handled by the onFocusChanged listener`)
+    } else {
+        const credExtractor = credExtractors[idp_name]
+        credExtractor(props, port, jobType)
+    }
 };
-
-
+  
 async function alarmLock(alarmName, refreshInterval) {
     const { alarmEnabled } = await storage.get(alarmName);
     if (!alarmEnabled) {
@@ -495,6 +520,9 @@ async function main() {
         let portEx = new portWithExceptions(port);
         port.onMessage.addListener(async function(msg) {
             let props = await storage.get(null)
+            if (msg.type === "EXTENSION_POPUP_OPENED") {
+                storage.set({ isFocused: true });
+            }
             //Stop all background schedule jobs.
             if (msg==='refreshoff'){
                 storage.set({'checked':0});

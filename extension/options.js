@@ -12,7 +12,7 @@ function getApi() {
 
 
 const awsSsoPermissions = {
-  permissions: ["tabs"],
+  permissions: ["tabs", "windows"],
   origins: [
     "https://*.awsapps.com/*",
     "https://*.amazonaws.com/*"
