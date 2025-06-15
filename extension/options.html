@@ -1,103 +1,87 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <title>AWS AlwaysON</title>
-        <script src="/js/jquery.min.js"></script>
-        <script type="module" src="options.js"></script>
-        <link rel="stylesheet" type="text/css" href="options.css">
-    </head>
-    <body>
-
-    <div class="topbar">
-        <button class="tablinks" id="options_main">General</button>
-        <button class="tablinks" id="options_google">Google</button>
-        <button class="tablinks" id="options_awssso">AWS SSO</button>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS AlwaysON - Settings</title>
+    <script src="/js/tailwind.min.js"></script>
+    <script src="/js/jquery.min.js"></script>
+    <style>
+        #tooltip-container {
+            position: fixed;
+            z-index: 9999;
+            pointer-events: none;
+            display: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease;
+        }
+        
+        #tooltip-container .tooltip-content {
+            background-color: #1f2937;
+            color: white;
+            font-size: 14px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            max-width: 300px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            line-height: 1.4;
+        }
+        
+        .help-button {
+            cursor: help;
+        }
+        
+        .help-button:hover {
+            color: #6b7280 !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-4xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <img src="/img/icon128.png" alt="AWS AlwaysON" class="w-8 h-8 rounded-lg">
+                    <h1 class="text-xl font-semibold text-gray-900">AWS AlwaysON</h1>
+                </div>
+            </div>
+        </div>
     </div>
-    
-    <div id="g" style="width: 400px; height:560px; padding-top: 25px;" />
-    <div id="options_main" class="grid-container" style="display: grid;"> 
-        <div class="item">
-            <div class="a">IDP Type</div>
-                <select type="text" id="idp_type", class="dropdown">
-                    <option value="none">Select an option</option>
-                    <option value="google">Google Workspace</option>
-                    <option value="awssso">AWS SSO</option>
-                </select>
-            <td><div class="layout"></div><img class="helpimg" id="infoPic" alt="Select one of the supported Identity Provider services." src="/img/moreinfo.png"></td>
-        </div>
-        <div class="item">
-            <div class="a">OS platform for STS CLI.</div>
-            <input type="text" value="" id="platform" class="txtbox" />
-            <td><div class="layout"></div><img class="helpimg" id="infoPic8" alt="Each OS platform has it's own command-line for setting enviroment variables. You can change it here." src="/img/moreinfo.png"></td>
-        </div>
-        <div class="item">
-            <div class="a">Role count</div>
-            <input type="text" value="" id="roleCount" placeholder="Role count in menu" class="txtbox" />
-            <td><div class="layout"></div><img class="helpimg" id="infoPic" alt="The amount of roles you will be using in the menu." src="/img/moreinfo.png"></td>
-        </div>        
-        <div class="item">
-            <div class="a">Update local AWS Credentials profile</div>
-            <input type="checkbox" id="clientupdate" class="chkbox" />
-            <td><div class="layout"></div><img class="helpimg" id="infoPic9" alt="If enabled, updates the AWS AlwaysON service with new credentials, which then updates the [default] profile in the aws credentials file." src="/img/moreinfo.png"></td>
-        </div>    
-    </div>
-    <div id="options_google" class="grid-container"> 
-        <div class="item">
-            <div class="a">SAML Provider name</div>
-            <input type="text" value="" id="saml_provider" placeholder="SAML Provider" class="txtbox" />
-            <td><div class="layout"></div><img class="helpimg" id="infoPic5" alt="PrincipalArn saml-provider name set in AWS." src="/img/moreinfo.png"></td>
-        </div>
-        <div class="item">
-            <div class="a">Your organization's domain name.</div>
-            <input type="text" value="" id="organization_domain" placeholder="Organization domain name" class="txtbox" />
-            <td><div class="layout"></div><img class="helpimg" id="infoPic2" alt="Used to locate the correct account when logged in to several Google accounts at once." src="/img/moreinfo.png"></td>
-        </div>
-        <div class="item">
-            <div class="a">Google Identity Provider ID</div>
-            <input type="text" value="" id="google_idpid" placeholder="Google Identity Provider ID" class="txtbox" />
-            <td><div class="layout"></div><img class="helpimg" id="infoPic3" alt="Easiest way to locate it is by copying the link to AWS in your Google apps menu. it will contain idpid=YOUR_IDP_ID" src="/img/moreinfo.png"></td>
-        </div>
-        <div class="item">
-            <div class="a">Google Service Provider ID</div>
-            <input type="text" value="" id="google_spid" placeholder="Google Service Provider ID" class="txtbox" />
-            <td><div class="layout"></div><img class="helpimg" id="infoPic4" alt="Easiest way to locate it is by copying the link to AWS in your Google apps menu. it will contain spid=YOUR_SP_ID" src="/img/moreinfo.png"></td>
-        </div>    
-        <div class="item">
-            <div class="a">Token refresh interval (Minutes)</div>
-            <input type="text" value="" id="refresh_interval" placeholder="Token auto-refresh interval" class="txtbox" />
-            <td><div class="layout"></div><img class="helpimg" id="infoPic6" alt="Keep this under 60. For some reason, AWS Web console session timeout is set to 1 hour maximum even if your IAM role is configured for more." src="/img/moreinfo.png"></td>
-        </div>
-        <div class="item">
-            <div class="a">STS Token session duration in seconds.</div>
-            <input type="text" value="" id="session_duration" placeholder="Token session duration in seconds" class="txtbox" />
-            <td><div class="layout"></div><img class="helpimg" id="infoPic7" alt="Make sure you do not exceed the value configured in the IAM role. If you don't know it, keep at the default of 1 hour." src="/img/moreinfo.png"></td>
-        </div>
-    </div>    
-    <div id="options_awssso" class="grid-container"> 
-        <div class="item">
-            <div class="a">AWS SSO Subdomain</div>
-            <input type="text" value="" id="awssso_subdomain" placeholder="Subdomain for awsapps.com" class="txtbox" />
-            <td><div class="layout"></div><img class="helpimg" id="infoPic2" alt="used to start the SSO process using https://subdomain.awsapps.com" src="/img/moreinfo.png"></td>
-        </div>
-        <div class="item">
-            <div class="a">SAML IDP domain</div>
-            <input type="text" value="" id="saml_idp_domain" placeholder="Your IDP domain. Used for extension permissions. Leaven empty for Google Workspace." class="txtbox" />
-            <td><div class="layout"></div><img class="helpimg" id="infoPic2" alt="AWS SSO redirects to your custom domain for SAML authentication. We need to add permissions for the extension to access this domain. Can leave blank for Google Workspace" src="/img/moreinfo.png"></td>
-        </div>
-        <div class="item">
-            <div class="a">SSO refresh interval (Minutes)</div>
-            <input type="text" value="" id="refresh_interval_sso" placeholder="Token and accounts auto-refresh interval." class="txtbox" />
-            <td><div class="layout"></div><img class="helpimg" id="infoPic6" alt="AWS SSO has a global token set for all accounts. This will trigger a new tab to open browse to the SSO login page." src="/img/moreinfo.png"></td>
-        </div>
-        <div class="item">
-            <div class="a">Show SSO login process tab</div>
-                <select type="text" id="sso_tab_visible", class="dropdown">
-                    <option value="true">True</option>
-                    <option value="false">False</option>
-                </select>
-            <td><div class="layout"></div><img class="helpimg" id="infoPic" alt="Sometimes the tab for the SSO process needs to be visibule due to requring user interaction. Select False to hide it." src="/img/moreinfo.png"></td>
-        </div>
 
-    </div>    
-    </body>
+    <!-- Navigation Tabs -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-4xl mx-auto px-4">
+            <nav class="flex space-x-8" id="tab-navigation">
+                <!-- Tabs will be dynamically generated here -->
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <!-- Content sections will be dynamically generated here -->
+        <div id="content-sections"></div>
+    </div>
+
+    <!-- Tooltip Container -->
+    <div id="tooltip-container">
+        <div class="tooltip-content" id="tooltip-content"></div>
+    </div>
+
+    <!-- Success/Error Toast -->
+    <div id="toast" class="fixed top-4 right-4 z-50 transform transition-all duration-300 translate-x-full">
+        <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            <span id="toast-message">Settings saved successfully!</span>
+        </div>
+    </div>
+
+    <!-- Scripts - Load in correct order -->
+    <script src="menu-config.js"></script>
+    <script src="options.js"></script>
+</body>
 </html> 

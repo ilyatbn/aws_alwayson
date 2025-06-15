@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS AlwaysON - Test Options</title>
+    <script src="/js/tailwind.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .tooltip {
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .tooltip.show {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <div class="flex items-center space-x-3 mb-6">
+            <img src="/img/icon128.png" alt="AWS AlwaysON" class="w-8 h-8 rounded-lg">
+            <h1 class="text-2xl font-bold">AWS AlwaysON Options Test</h1>
+        </div>
+        
+        <div id="test-results" class="space-y-4">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 class="font-medium text-blue-800">Test Results</h3>
+                <div id="results-content">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="menu-config.js"></script>
+    <script>
+        // Test script to verify configuration loading
+        $(document).ready(function() {
+            const results = $('#results-content');
+            
+            // Test 1: Check if MENU_CONFIG is loaded
+            if (typeof MENU_CONFIG !== 'undefined') {
+                results.append('<p class="text-green-600">✅ MENU_CONFIG loaded successfully</p>');
+                results.append(`<p class="text-gray-600">Tabs: ${MENU_CONFIG.tabs.length}</p>`);
+                results.append(`<p class="text-gray-600">Sections: ${Object.keys(MENU_CONFIG.sections).length}</p>`);
+                
+                // Test 2: Check tabs
+                MENU_CONFIG.tabs.forEach(tab => {
+                    results.append(`<p class="text-gray-600">Tab: ${tab.id} - ${tab.label}</p>`);
+                });
+                
+                // Test 3: Check sections
+                Object.keys(MENU_CONFIG.sections).forEach(sectionId => {
+                    const section = MENU_CONFIG.sections[sectionId];
+                    results.append(`<p class="text-gray-600">Section ${sectionId}: ${section.length} fields</p>`);
+                });
+                
+            } else {
+                results.append('<p class="text-red-600">❌ MENU_CONFIG not found!</p>');
+            }
+            
+            // Test 4: Check jQuery
+            if (typeof $ !== 'undefined') {
+                results.append('<p class="text-green-600">✅ jQuery loaded successfully</p>');
+            } else {
+                results.append('<p class="text-red-600">❌ jQuery not found!</p>');
+            }
+            
+            // Test 5: Check Tailwind
+            if (typeof tailwind !== 'undefined') {
+                results.append('<p class="text-green-600">✅ Tailwind CSS loaded successfully</p>');
+            } else {
+                results.append('<p class="text-red-600">❌ Tailwind CSS not found!</p>');
+            }
+        });
+    </script>
+</body>
+</html> 

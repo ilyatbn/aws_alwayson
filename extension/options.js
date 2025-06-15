@@ -1,4 +1,6 @@
-const storage = getApi().storage.local
+// Chrome extension compatibility
+let storage;
+let api;
 
 function getApi() {
   if (typeof chrome !== "undefined") {
@@ -8,8 +10,43 @@ function getApi() {
       return chrome;
     }
   }
+  return null;
 }
 
+// Initialize API and storage
+function initializeAPI() {
+  api = getApi();
+  if (api && api.storage) {
+    storage = api.storage.local;
+    debug('Chrome extension API initialized');
+    return true;
+  } else {
+    // Mock storage for testing outside extension context
+    debug('Chrome extension API not available, using mock storage');
+    storage = {
+      get: function(keys, callback) {
+        const mockData = {};
+        if (Array.isArray(keys)) {
+          keys.forEach(key => {
+            mockData[key] = localStorage.getItem(key) || '';
+          });
+        } else if (typeof keys === 'object') {
+          Object.keys(keys).forEach(key => {
+            mockData[key] = localStorage.getItem(key) || keys[key];
+          });
+        }
+        callback(mockData);
+      },
+      set: function(items, callback) {
+        Object.keys(items).forEach(key => {
+          localStorage.setItem(key, items[key]);
+        });
+        if (callback) callback();
+      }
+    };
+    return false;
+  }
+}
 
 const awsSsoPermissions = {
   permissions: ["tabs", "windows"],
@@ -19,108 +56,469 @@ const awsSsoPermissions = {
   ]
 };
 
-async function permissionValidator(option, value) {
-  let props = await storage.get(null)
-  console.log(`validating opt ${option}`)
-  if (option === "saml_idp_domain") {
-    if (props.saml_idp_domain!=='' && props.saml_idp_domain!==value) {
-      console.log(`updated idp domain, requesting permissions for ${value}`)
-      const extraIdpPermission = {
-        origins: [`https://${value}/*`]
-        }      
-      getApi().permissions.contains(extraIdpPermission, (result) => {
-        if (result) {
-          console.log("Permissions already granted.");
-        } else {
-          getApi().permissions.request(extraIdpPermission, (granted) => {
-            if (granted) {
-              console.log(`user granted permissions for domain ${value}`);
-              return true
-            } else {
-              console.log(`user did not grant permissions for domain ${value}`);
-              return false
-            }
-          });
-        }
-      });
-    }
-  }
-  if (option === "idp_type") {
-    if (value==="awssso") {
-      console.log("enabled AWS SSO. adding new permissions")
-      getApi().permissions.contains(awsSsoPermissions, (result) => {
-        if (result) {
-          console.log("Permissions already granted.");
-        } else {
-          getApi().permissions.request(awsSsoPermissions  , (granted) => {
-            if (granted) {
-              console.log("Permissions granted!");
-              return true
-            } else {
-              console.log("Permissions denied.");
-              return false
-            }
-          });
-        }
-      });
-    }
-  }
-  return true
+// State management
+let currentTab = 'options_main';
+let tooltipTimeout = null;
+let isExtensionContext = false;
+let permissionValidationInProgress = {}; // Track ongoing permission validations
+
+// Debug function
+function debug(message, data = null) {
+  console.log(`[AWS AlwaysON Options] ${message}`, data);
 }
-//Save options to local storage
-$(".txtbox,select,:checkbox").focusout(async function() {
-  let optionName = $(this).attr("id")
-  let optionValue = $(this).val()
-  let obj ={
-    [optionName]:optionValue
+
+// Initialize the application
+$(document).ready(function() {
+  debug('Document ready, initializing...');
+  
+  // Initialize API
+  isExtensionContext = initializeAPI();
+  
+  // Check if MENU_CONFIG is available
+  if (typeof MENU_CONFIG === 'undefined') {
+    debug('ERROR: MENU_CONFIG not found!');
+    showError('Configuration not loaded. Please refresh the page.');
+    return;
   }
-  let validated = await permissionValidator(optionName, optionValue)
-  if (validated) {
-    storage.set(obj);
-  }
-  else {
-    console.log("validation did not pass..")
+  
+  debug('MENU_CONFIG loaded successfully', MENU_CONFIG);
+  
+  try {
+    initializeUI();
+    loadOptions();
+    setupEventListeners();
+    debug('Initialization complete');
+  } catch (error) {
+    debug('Error during initialization:', error);
+    showError('Failed to initialize options page: ' + error.message);
   }
 });
 
-// //Save checkboxes values to local storage
-// $(":checkbox").change(async function() {
-//   let optionName = $(this).attr("id")
-//   let optionValue = $(this).prop("checked")
-//   let obj ={
-//     [optionName]:optionValue
-//   }
-//   storage.set(obj);
-// });
-// // Save dropdown menu options
-// $('select').change(async function() {
-//   let optionName = $(this).attr("id")
-//   let optionValue = $(this).val()
-//   let obj ={
-//     [optionName]:optionValue
-//   }
-//   validated = await permissionValidator(optionName, optionValue)
-//   if (validated) storage.set(obj);
-// });
+function showError(message) {
+  const contentSections = $('#content-sections');
+  contentSections.html(`
+    <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+      <div class="flex items-center">
+        <svg class="w-6 h-6 text-red-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+        </svg>
+        <h3 class="text-lg font-medium text-red-800">Error</h3>
+      </div>
+      <p class="mt-2 text-red-700">${message}</p>
+    </div>
+  `);
+}
+
+function initializeUI() {
+  debug('Initializing UI...');
+  renderTabs();
+  renderContent();
+  showTab(currentTab);
+  debug('UI initialized');
+}
+
+function renderTabs() {
+  debug('Rendering tabs...');
+  const tabContainer = $('#tab-navigation');
+  tabContainer.empty();
+  
+  MENU_CONFIG.tabs.forEach(tab => {
+    const tabElement = $(`
+      <button class="tab-button py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+        tab.active ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+      }" data-tab="${tab.id}">
+        ${tab.label}
+      </button>
+    `);
+    tabContainer.append(tabElement);
+  });
+  debug('Tabs rendered');
+}
+
+function renderContent() {
+  debug('Rendering content sections...');
+  const contentContainer = $('#content-sections');
+  contentContainer.empty();
+  
+  Object.keys(MENU_CONFIG.sections).forEach(sectionId => {
+    const section = MENU_CONFIG.sections[sectionId];
+    debug(`Rendering section: ${sectionId}`, section);
+    
+    const sectionElement = $(`
+      <div id="${sectionId}-content" class="tab-content hidden">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="space-y-6">
+            ${section.map(field => renderField(field)).join('')}
+          </div>
+        </div>
+      </div>
+    `);
+    contentContainer.append(sectionElement);
+  });
+  debug('Content sections rendered');
+}
+
+function renderField(field) {
+  const fieldId = field.id;
+  const helpIcon = `
+    <button class="help-button ml-2 p-1 text-gray-400 hover:text-gray-600 transition-colors" 
+            data-help="${field.helpText}" 
+            title="Help">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+      </svg>
+    </button>
+  `;
+
+  switch (field.type) {
+    case 'text':
+      return `
+        <div class="field-group">
+          <label for="${fieldId}" class="block text-sm font-medium text-gray-700 mb-2">
+            ${field.label}
+            ${helpIcon}
+          </label>
+          <input type="text" 
+                 id="${fieldId}" 
+                 class="form-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" 
+                 placeholder="${field.placeholder || ''}"
+                 autocomplete="off">
+        </div>
+      `;
+    
+    case 'select':
+      const options = field.options.map(option => 
+        `<option value="${option.value}">${option.label}</option>`
+      ).join('');
+      
+      return `
+        <div class="field-group">
+          <label for="${fieldId}" class="block text-sm font-medium text-gray-700 mb-2">
+            ${field.label}
+            ${helpIcon}
+          </label>
+          <select id="${fieldId}" 
+                  class="form-select w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors">
+            ${options}
+          </select>
+        </div>
+      `;
+    
+    case 'checkbox':
+      return `
+        <div class="field-group">
+          <div class="flex items-center">
+            <input type="checkbox" 
+                   id="${fieldId}" 
+                   class="form-checkbox h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded transition-colors">
+            <label for="${fieldId}" class="ml-3 block text-sm font-medium text-gray-700">
+              ${field.label}
+              ${helpIcon}
+            </label>
+          </div>
+        </div>
+      `;
+    
+    default:
+      debug(`Unknown field type: ${field.type}`, field);
+      return '';
+  }
+}
+
+function showTab(tabId) {
+  debug(`Showing tab: ${tabId}`);
+  
+  // Hide all content sections
+  $('.tab-content').addClass('hidden');
+  
+  // Show selected content section
+  const targetContent = $(`#${tabId}-content`);
+  if (targetContent.length > 0) {
+    targetContent.removeClass('hidden');
+  } else {
+    debug(`ERROR: Content section not found for tab: ${tabId}`);
+  }
+  
+  // Update tab styling
+  $('.tab-button').removeClass('border-orange-500 text-orange-600')
+                  .addClass('border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300');
+  
+  $(`.tab-button[data-tab="${tabId}"]`).removeClass('border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300')
+                                       .addClass('border-orange-500 text-orange-600');
+  
+  currentTab = tabId;
+  debug(`Tab ${tabId} shown successfully`);
+}
+
+function setupEventListeners() {
+  debug('Setting up event listeners...');
+  
+  // Tab switching
+  $(document).on('click', '.tab-button', function() {
+    const tabId = $(this).data('tab');
+    debug(`Tab clicked: ${tabId}`);
+    showTab(tabId);
+  });
+  
+  // Form field changes - use 'change' event only to avoid duplicates
+  $(document).on('change', '.form-input, .form-select, .form-checkbox', async function() {
+    const fieldId = $(this).attr('id');
+    let fieldValue = $(this).val();
+    
+    // Handle checkbox values
+    if ($(this).attr('type') === 'checkbox') {
+      fieldValue = $(this).prop('checked');
+    }
+    
+    debug(`Field changed: ${fieldId} = ${fieldValue}`);
+    await saveField(fieldId, fieldValue);
+  });
+  
+  // Help tooltips - use mouseenter/mouseleave for better control
+  $(document).on('mouseenter', '.help-button', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const helpText = $(this).data('help');
+    if (helpText) {
+      showTooltip(helpText, e);
+    }
+  });
+  
+  $(document).on('mouseleave', '.help-button', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    hideTooltip();
+  });
+  
+  // Also handle tooltip on mouseleave from the tooltip itself
+  $(document).on('mouseleave', '#tooltip-container', function() {
+    hideTooltip();
+  });
+  
+  debug('Event listeners set up');
+}
+
+function showTooltip(text, event) {
+  if (!text) return;
+  
+  const tooltip = $('#tooltip-container');
+  const tooltipContent = $('#tooltip-content');
+  
+  // Clear any existing timeout
+  if (tooltipTimeout) {
+    clearTimeout(tooltipTimeout);
+    tooltipTimeout = null;
+  }
+  
+  tooltipContent.text(text);
+  
+  // Position tooltip
+  const rect = event.target.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  
+  // Calculate position
+  let left = rect.right + 10;
+  let top = rect.top - 5;
+  
+  // Ensure tooltip doesn't go off-screen
+  if (left + 250 > viewportWidth) {
+    left = rect.left - 260; // Position to the left of the button
+  }
+  
+  if (top + 100 > viewportHeight) {
+    top = viewportHeight - 110; // Position above bottom of viewport
+  }
+  
+  tooltip.css({
+    left: left + 'px',
+    top: top + 'px',
+    display: 'block',
+    opacity: '1',
+    visibility: 'visible'
+  });
+  
+  debug(`Tooltip shown: ${text}`);
+}
+
+function hideTooltip() {
+  if (tooltipTimeout) {
+    clearTimeout(tooltipTimeout);
+  }
+  
+  tooltipTimeout = setTimeout(() => {
+    const tooltip = $('#tooltip-container');
+    tooltip.css({
+      display: 'none',
+      opacity: '0',
+      visibility: 'hidden'
+    });
+    debug('Tooltip hidden');
+  }, 100);
+}
+
+async function saveField(fieldId, fieldValue) {
+  try {
+    debug(`Saving field: ${fieldId} = ${fieldValue}`);
+    
+    // Only validate permissions in extension context
+    let validated = true;
+    if (isExtensionContext) {
+      validated = await permissionValidator(fieldId, fieldValue);
+    }
+    
+    if (validated) {
+      const obj = { [fieldId]: fieldValue };
+      await storage.set(obj);
+      showToast('Setting saved successfully!', 'success');
+      debug(`Field saved successfully: ${fieldId}`);
+    } else {
+      showToast('Permission validation failed', 'error');
+      debug(`Permission validation failed for: ${fieldId}`);
+    }
+  } catch (error) {
+    console.error('Error saving field:', error);
+    showToast('Error saving setting', 'error');
+    debug(`Error saving field ${fieldId}:`, error);
+  }
+}
+
+function showToast(message, type = 'success') {
+  const toast = $('#toast');
+  const toastMessage = $('#toast-message');
+  const toastContent = toast.find('div');
+  
+  // Update message and styling
+  toastMessage.text(message);
+  
+  if (type === 'error') {
+    toastContent.removeClass('bg-green-500').addClass('bg-red-500');
+  } else {
+    toastContent.removeClass('bg-red-500').addClass('bg-green-500');
+  }
+  
+  // Show toast
+  toast.removeClass('translate-x-full');
+  
+  // Hide after 3 seconds
+  setTimeout(() => {
+    toast.addClass('translate-x-full');
+  }, 3000);
+}
+
+async function permissionValidator(option, value) {
+  if (!isExtensionContext) {
+    debug('Not in extension context, skipping permission validation');
+    return true;
+  }
+  
+  // Check if validation is already in progress for this option
+  if (permissionValidationInProgress[option]) {
+    debug(`Permission validation already in progress for: ${option}`);
+    return true; // Return true to avoid blocking, the ongoing validation will handle it
+  }
+  
+  let props = await storage.get(null);
+  debug(`Validating option: ${option} = ${value}`);
+  
+  if (option === "saml_idp_domain") {
+    // Only request permissions if the value is not empty and different from current
+    if (value && value !== '' && props.saml_idp_domain !== value) {
+      debug(`Updated IDP domain, requesting permissions for ${value}`);
+      permissionValidationInProgress[option] = true;
+      
+      const extraIdpPermission = {
+        origins: [`https://${value}/*`]
+      };
+      
+      return new Promise((resolve) => {
+        api.permissions.contains(extraIdpPermission, (result) => {
+          if (result) {
+            debug("Permissions already granted.");
+            permissionValidationInProgress[option] = false;
+            resolve(true);
+          } else {
+            api.permissions.request(extraIdpPermission, (granted) => {
+              if (granted) {
+                debug(`User granted permissions for domain ${value}`);
+                permissionValidationInProgress[option] = false;
+                resolve(true);
+              } else {
+                debug(`User did not grant permissions for domain ${value}`);
+                permissionValidationInProgress[option] = false;
+                resolve(false);
+              }
+            });
+          }
+        });
+      });
+    }
+  }
+  
+  if (option === "idp_type") {
+    if (value === "awssso") {
+      debug("Enabled AWS SSO, adding new permissions");
+      permissionValidationInProgress[option] = true;
+      
+      return new Promise((resolve) => {
+        api.permissions.contains(awsSsoPermissions, (result) => {
+          if (result) {
+            debug("Permissions already granted.");
+            permissionValidationInProgress[option] = false;
+            resolve(true);
+          } else {
+            api.permissions.request(awsSsoPermissions, (granted) => {
+              if (granted) {
+                debug("Permissions granted!");
+                permissionValidationInProgress[option] = false;
+                resolve(true);
+              } else {
+                debug("Permissions denied.");
+                permissionValidationInProgress[option] = false;
+                resolve(false);
+              }
+            });
+          }
+        });
+      });
+    }
+  }
+  
+  return true;
+}
 
 function loadOptions() {
-  storage.get({idp_type,sso_tab_visible}, function(props) {
-    $('select').each(function() {
-      $(this).val(props[$(this).prop("id")])
-    })
+  debug('Loading options from storage...');
+  
+  // Load all field values from storage
+  const allFieldIds = [];
+  Object.values(MENU_CONFIG.sections).forEach(section => {
+    section.forEach(field => {
+      allFieldIds.push(field.id);
+    });
   });
-  storage.get({organization_domain, google_spid, google_idpid, saml_provider,
-    refresh_interval, session_duration, roleCount, platform, awssso_subdomain,
-    refresh_interval_sso, awssso_subdomain, saml_idp_domain}, function(props) {
-      $(".txtbox").each(function() {
-        $(this).val(props[$(this).prop("id")])
-      })
-  });
-
-  storage.get({clientupdate}, function(props) {
-      $(".chkbox").each(function() {
-        $(this).prop("checked",props[$(this).prop("id")])
-      })
+  
+  debug('Field IDs to load:', allFieldIds);
+  
+  storage.get(allFieldIds, function(props) {
+    debug('Loaded properties from storage:', props);
+    
+    // Set values for each field
+    allFieldIds.forEach(fieldId => {
+      const element = $(`#${fieldId}`);
+      if (element.length > 0) {
+        if (element.attr('type') === 'checkbox') {
+          element.prop('checked', props[fieldId] || false);
+        } else {
+          element.val(props[fieldId] || '');
+        }
+        debug(`Loaded field ${fieldId}:`, props[fieldId]);
+      } else {
+        debug(`Field element not found: ${fieldId}`);
+      }
+    });
+    
+    debug('Options loading complete');
   });
 }
 
