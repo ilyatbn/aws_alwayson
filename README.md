@@ -1,7 +1,7 @@
 # AWS AlwaysON  
 
 ## Introduction
-AWS AlwaysOn is a browser extension that helps users stay connected to AWS, both in the web browser and CLI.
+AWS AlwaysON is a browser extension that helps users stay connected to AWS, both in the web browser and CLI.
 
 This extension can be used as an alternative to `aws-google-auth` and doesn't require inputing credentials as long as your Google account is logged in, nor does it suffer from constant Captcha.  
 The extension was developed for Chrome but works mostly fine on all major browsers except Safari which was untested.  
@@ -17,15 +17,7 @@ The extension was developed for Chrome but works mostly fine on all major browse
 
 ## Installation
 
-### Option 1 (Chrome, Firefox, Edge, Opera, Brave*)
-Available directly on Chrome Web Store and Add-ons for Firefox:  
-
-<a href="https://chrome.google.com/webstore/detail/aws-alwayson/lfplgkokagjgodoeojaodphmjdhlpega" target="_blank" rel="noopener noreferrer"><img src="https://raw.githubusercontent.com/ilyatbn/aws_alwayson/master/img/chrome.png" width="48" /></a>
-<a href="https://addons.mozilla.org/en-US/firefox/addon/aws-alwayson/" target="_blank" rel="noopener noreferrer"><img src="https://raw.githubusercontent.com/ilyatbn/aws_alwayson/master/img/ff.png" width="48" /></a>
-
-
 \* Should technically work with any chromium based browser.
-### Option 2
  **Google Chrome:**  
 Clone this repository.  
 Go to the Chrome Extensions page.  
@@ -33,13 +25,6 @@ Enable Developer Mode on the right side of the page.
 Press "Load Unpacked".  
 Pick the project folder.  
 
-**Mozilla Firefox:**  
-Delete the regular manifest.js and rename the manifest-firefox.js to manifest.js  
-Go to Addons and themes in the hamburger menu.  
-Click the wheel and then Debug Add-ons.  
-Click Load Temporary Add-on... and select the manifest.json file.  
-## Using the extension  
-First you will need to configure some properties in the Options menu. Each property has additional info that you can read to help you set it up properly. There are separate sections of configurations based on the IDP Type you use (Google Workspace or AWSSSO)
 
 ![Options](img/opts_main.png)  
 When you are done, exit the Options menu.  
@@ -87,14 +72,14 @@ More info [here](/aosvc-python/README.md).
 Full changelog is available [here](/changelog.md).  
 ## Compatibility:
 Tested and working on:  
-aChrome - v101  
-Brave - v1.77.10  
-Firefox - v100  
+Chrome - v137  
+Brave - v1.77
 
 
 ## Known issues:  
-- AWS SSO uses tabs to capture credentials. if you have multiple accounts configured or something in your SSO process stops, the credential capture might fail.
-- AWS SSO's auto refresh also uses a new tab. This caused issues of multiple tabs being open at once when the OS is sleeping (due to how google handles timers). We configured a
+- Firefox was dropped due to their annoying MV3 optional permissions not working correctly. dont feel like solving for now.
+- AWS SSO uses tabs to capture credentials. any stop that requires interaction with the login process may cause the capture to fail. nothing i can do about that you just need to rerun the process.
+- AWS SSO's auto refresh caused issues of multiple tabs being open at once when the OS is sleeping (due to how google handles timers). We configured a workaround that requires the user to do any interaction with the browser. we detect that he's "active" this way and open the tab then.
 - (Edge) Options UI is smaller than the elements.  
 - (Opera) Options UI opens in a full tab.  
 - Sometimes when the Gmail user account is signed out (or the session expires), the error message shown in the extension is incorrect.
