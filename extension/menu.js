@@ -144,7 +144,16 @@ function setConsoleButton(button, props) {
 
 function populateCheckboxesAndButtons(props) {
   debug('Populating checkboxes and buttons...');
-  
+
+  if (props.idp_type === "awssso") {
+    // In AWS SSO, enable all buttons
+    $('[id^="sts_button"]').each(function() {
+      setStsButton(this, props);
+    });
+    $('[id^="console_btn"]').each(function() {
+      setConsoleButton(this, props);
+    });
+  }
   if (typeof props.checked !== 'undefined') {
     const dataIndex = $(`#${props.checked}`).attr("data-index");
     
@@ -153,12 +162,7 @@ function populateCheckboxesAndButtons(props) {
     
     if (props.idp_type === "awssso") {
       // In AWS SSO, enable all buttons
-      $('[id^="sts_button"]').each(function() {
-        setStsButton(this, props);
-      });
-      $('[id^="console_btn"]').each(function() {
-        setConsoleButton(this, props);
-      });
+      console.log("awssso all buttons should be enabled already.")
     } else {
       // Enable only the relevant STS button
       $(`[id^="sts_button"][data-index=${dataIndex}]`).each(function() {
@@ -208,8 +212,10 @@ async function refreshRolesBackend() {
   });
   
   port.postMessage('role_refresh');
-  port.onMessage.addListener(function(msg) {
+  port.onMessage.addListener(async function(msg) {
     if (msg === 'roles_refreshed') {
+      let props = await storage.get(null);
+      populateCheckboxesAndButtons(props)
       location.reload();
     } else if (msg.includes('err')) {
       storage.get(['last_msg_detail'], function(result) {
@@ -240,6 +246,8 @@ function buildMenu(props) {
                  data-index="${i}"
                  ${props.autofill == 1 ? 'readonly' : ''}>
           
+          <div class="w-px h-6 bg-gray-300 mx-2"></div>
+          
           <button class="action-button sts-button hidden" 
                   id="sts_button${i}" 
                   data-index="${i}" 
@@ -252,7 +260,7 @@ function buildMenu(props) {
         </div>
         
         <label class="toggle-switch ml-2">
-          <input type="checkbox" id="enable${i}" data-index="${i}">
+          <input type="checkbox" id="enable${i}" title="Enable client update scheduled tasks for this role.", data-index="${i}">
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -274,6 +282,15 @@ function recalculateSidebarPosition() {
   
   const windowHeight = $(window).height();
   const sidebar = $('.sidebar');
+  const roleCount = parseInt($('#role-grid').children().length) || 1;
+  
+  // Calculate dynamic gap: 4px * roleCount, max 40px (for 10+ roles)
+  const dynamicGap = Math.min(4 * roleCount, 40);
+  
+  // Apply the dynamic gap to the sidebar
+  sidebar.css('gap', dynamicGap + 'px');
+  
+  // Recalculate sidebar height after gap change
   const sidebarHeight = sidebar.height();
   
   // Calculate the center position
@@ -281,10 +298,10 @@ function recalculateSidebarPosition() {
   
   // Apply the positioning
   sidebar.css({
-    'top': Math.max(0, centerPosition) + 'px',
+    'top': Math.max(0, centerPosition) + 'px'
   });
   
-  debug(`Window height: ${windowHeight}, Sidebar height: ${sidebarHeight}, Center position: ${centerPosition}`);
+  debug(`Window height: ${windowHeight}, Role count: ${roleCount}, Dynamic gap: ${dynamicGap}px, Sidebar height: ${sidebarHeight}, Center position: ${centerPosition}`);
 }
 
 function setupRoleEventListeners(props) {

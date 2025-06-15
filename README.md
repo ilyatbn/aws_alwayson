@@ -1,14 +1,19 @@
 # AWS AlwaysON  
 
 ## Introduction
-AWS AlwaysOn is a browser extension that allows users that use Google Workspace (gsuite) as an IDP provier to AWS, to easily maintain sessions to the AWS console and get temporary STS credentials.  
+AWS AlwaysOn is a browser extension that helps users stay connected to AWS, both in the web browser and CLI.
+
 This extension can be used as an alternative to `aws-google-auth` and doesn't require inputing credentials as long as your Google account is logged in, nor does it suffer from constant Captcha.  
 The extension was developed for Chrome but works mostly fine on all major browsers except Safari which was untested.  
+
+## Supported providers
+- Google Workspace as an IDP provier to AWS, 
+- AWS SSO with any IDP Provider (Only Google was tested)
+
 ## Features
 - Refresh AWS Web Console session automatically to keep user logged in. 
-- Get temporary credentials for assumed role to use for CLI access.
-- Autofill all available AWS roles for Google Workspace account.
-- Automatically update local aws credentials file.
+- Get temporary credentials for assumed role (STS) to use for CLI access.
+- Automatically update local aws credentials file using provded clients.
 
 ## Installation
 
@@ -34,13 +39,14 @@ Go to Addons and themes in the hamburger menu.
 Click the wheel and then Debug Add-ons.  
 Click Load Temporary Add-on... and select the manifest.json file.  
 ## Using the extension  
-First you will need to configure some properties in the Options menu. Each property has additional info that you can read to help you set it up properly.  
-![Options](img/opts.png)  
+First you will need to configure some properties in the Options menu. Each property has additional info that you can read to help you set it up properly. There are separate sections of configurations based on the IDP Type you use (Google Workspace or AWSSSO)
+
+![Options](img/opts_main.png)  
 When you are done, exit the Options menu.  
-Now you can add your user's IAM role or roles or click the (A) button to initiate autofill.    
+Now you can add your user's IAM role or roles or click the time button to fetch them automatically. On AWS SSO, only automatic is avialble at this time since it is also acts as a scheduler.    
 ![Main menu](img/main.png)  
 
-Click on the slider to start the token auto refresh procedure.  
+Click on the slider to start the token and client auto refresh procedure. On AWS SSO, this only acts as a client token refresh since all roles are globally loaded and refreshed using the time button.
 After enabling the refresh you can also click on the CLI button to get the temporary STS credentials.  
 
 ### Updater Service installation
@@ -81,12 +87,14 @@ More info [here](/aosvc-python/README.md).
 Full changelog is available [here](/changelog.md).  
 ## Compatibility:
 Tested and working on:  
-Chrome - v101  
-Brave - v1.38.111  
-Edge  - v101      
-Opera - v86  
+aChrome - v101  
+Brave - v1.77.10  
 Firefox - v100  
+
+
 ## Known issues:  
+- AWS SSO uses tabs to capture credentials. if you have multiple accounts configured or something in your SSO process stops, the credential capture might fail.
+- AWS SSO's auto refresh also uses a new tab. This caused issues of multiple tabs being open at once when the OS is sleeping (due to how google handles timers). We configured a
 - (Edge) Options UI is smaller than the elements.  
 - (Opera) Options UI opens in a full tab.  
 - Sometimes when the Gmail user account is signed out (or the session expires), the error message shown in the extension is incorrect.

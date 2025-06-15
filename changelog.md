@@ -121,3 +121,10 @@ v1.3.0
 - in AWS SSO, the A button now refreshes the AWS SSO token globally every 6 hours (configurable)
 - in AWS SSO, added button to AWS console.
 - As far as I could see, "Multi Session" in AWS console works fine with the current code.
+___
+v2.0.0
+- All hail AI. Used cursor to refactor loads of things. now it's a vibe-coding project :)
+- decided to go major version due to above.
+- Options is totally redesigned.
+- Roles menu got a fresh coat of paint.
+- AWS SSO is semi automatic since all other options we're causing multiple tabs to open and get stuck. there's a trigger configured to check a time interval every time any tab is focused, meaning that once every few hours you need to check your browser, and if the timer has passed, a new tab will be created to fetch creds.
