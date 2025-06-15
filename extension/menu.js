@@ -264,6 +264,27 @@ function buildMenu(props) {
   handleTextboxes(props);
   populateCheckboxesAndButtons(props);
   setupRoleEventListeners(props);
+  
+  // Recalculate sidebar positioning after menu is built
+  recalculateSidebarPosition();
+}
+
+function recalculateSidebarPosition() {
+  debug('Recalculating sidebar position...');
+  
+  const windowHeight = $(window).height();
+  const sidebar = $('.sidebar');
+  const sidebarHeight = sidebar.height();
+  
+  // Calculate the center position
+  const centerPosition = (windowHeight - sidebarHeight) / 2;
+  
+  // Apply the positioning
+  sidebar.css({
+    'top': Math.max(0, centerPosition) + 'px',
+  });
+  
+  debug(`Window height: ${windowHeight}, Sidebar height: ${sidebarHeight}, Center position: ${centerPosition}`);
 }
 
 function setupRoleEventListeners(props) {

@@ -118,12 +118,12 @@
                 height: 29px;
                 background-image: url('/img/auto.png');
                 background-size: 29px;
-                background-color: rgb(184, 194, 194);
                 --enabled: 0;
             }
             
             .autofill-button.enabled {
-                background-color: #ff5400;
+                -webkit-filter : hue-rotate(180deg);
+                filter : hue-rotate(180deg);
                 --enabled: 1;
             }
             
@@ -150,9 +150,10 @@
                 background-color: rgb(220, 230, 230);
                 display: flex;
                 flex-direction: column;
+                justify-content: center;
                 align-items: center;
-                padding-top: 8px;
-                gap: 8px;
+                gap: 35px;
+                padding-right: 4px;
             }
             
             /* Main content area */
@@ -167,7 +168,7 @@
         <!-- Main content area -->
         <div class="main-content">
             <!-- Role grid container -->
-            <div id="role-grid" class="space-y-1 bg-[rgb(220,230,230)] p-1 rounded">
+            <div id="role-grid" class="space-y-1 bg-[rgb(220,230,230)]">
                 <!-- Role items will be dynamically generated here -->
             </div>
         </div>
