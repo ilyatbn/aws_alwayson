@@ -2,20 +2,187 @@
 <html>
     <head>
         <title>AWS AlwaysON</title>
+        <script src="/js/tailwind.min.js"></script>
         <script src="/js/jquery.min.js"></script>
-        <script type="module" src="menu.js"></script>
-        <link rel="stylesheet" type="text/css" href="menu.css">
+        <style>
+            /* Custom styles to maintain original appearance */
+            .role-input {
+                height: 30px;
+                width: 275px;
+                border: 1px solid #ccc;
+                border-radius: 3px;
+                padding: 0 !important;
+                font-size: 10px !important;
+            }
+            
+            .role-input:focus {
+                outline: none;
+                border-color: #ff5400;
+                box-shadow: 0 0 0 2px rgba(255, 84, 0, 0.2);
+            }
+            
+            .role-input[readonly] {
+                background-color: rgb(225, 225, 225);
+                cursor: not-allowed;
+            }
+            
+            /* Toggle switch styling */
+            .toggle-switch {
+                position: relative;
+                display: inline-block;
+                width: 36px;
+                height: 21px;
+            }
+            
+            .toggle-switch input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+            
+            .toggle-slider {
+                position: absolute;
+                cursor: pointer;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgb(198, 209, 209);
+                transition: 0.4s;
+                border-radius: 20px;
+            }
+            
+            .toggle-slider:before {
+                position: absolute;
+                content: "";
+                height: 13px;
+                width: 13px;
+                left: 4px;
+                bottom: 4px;
+                background-color: rgb(255, 255, 255);
+                transition: 0.4s;
+                border-radius: 50%;
+            }
+            
+            input:checked + .toggle-slider {
+                background-color: #ff5400;
+            }
+            
+            input:focus + .toggle-slider {
+                box-shadow: 0 0 1px #ff5400;
+            }
+            
+            input:checked + .toggle-slider:before {
+                transform: translateX(16px);
+            }
+            
+            /* Button styling */
+            .action-button {
+                width: 26px;
+                height: 26px;
+                border: none;
+                border-radius: 3px;
+                background-size: 26px;
+                background-repeat: no-repeat;
+                background-position: center;
+                cursor: pointer;
+                transition: box-shadow 0.2s ease;
+            }
+            
+            .action-button:hover {
+                box-shadow: 0 0 2px 1px #ff5400;
+            }
+            
+            .action-button.hidden {
+                visibility: hidden;
+                pointer-events: none;
+            }
+            
+            .sts-button {
+                background-image: url('/img/cli.png');
+            }
+            
+            .console-button {
+                background-image: url('/img/console_btn.png');
+            }
+            
+            .options-button {
+                width: 24px;
+                height: 24px;
+                background-image: url('/img/options.png');
+                background-size: 24px;
+            }
+            
+            .autofill-button {
+                width: 29px;
+                height: 29px;
+                background-image: url('/img/auto.png');
+                background-size: 29px;
+                background-color: rgb(184, 194, 194);
+                --enabled: 0;
+            }
+            
+            .autofill-button.enabled {
+                background-color: #ff5400;
+                --enabled: 1;
+            }
+            
+            /* Error bar */
+            .error-bar {
+                position: fixed;
+                left: 0;
+                bottom: 0;
+                width: 100%;
+                background-color: #ff5400;
+                color: #ffffff;
+                padding: 8px 12px;
+                font-size: 14px;
+                z-index: 10;
+            }
+            
+            /* Sidebar positioning */
+            .sidebar {
+                position: fixed;
+                top: 0;
+                right: 0;
+                width: 30px;
+                height: 100%;
+                background-color: rgb(220, 230, 230);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding-top: 8px;
+                gap: 8px;
+            }
+            
+            /* Main content area */
+            .main-content {
+                width: 450px;
+                margin: 5px;
+                margin-right: 35px; /* Space for sidebar */
+            }
+        </style>
     </head>
-    <body>
-        <div id="main" style="width: 450px; margin: 5px;" />
-        </div>
-        <div class="sidebar right">
-            <button class="options_btn" id="go-to-options"></button>
-            <button class="autofill_btn" id="autofill_btn"></button>
+    <body class="bg-[rgb(220,230,230)] m-0 p-0">
+        <!-- Main content area -->
+        <div class="main-content">
+            <!-- Role grid container -->
+            <div id="role-grid" class="space-y-1 bg-[rgb(220,230,230)] p-1 rounded">
+                <!-- Role items will be dynamically generated here -->
+            </div>
         </div>
         
-    <div class="grid-container" id="grid">
-    </div>
-    <div id="msg" class="errorbar"></div>
-</body>
+        <!-- Right sidebar -->
+        <div class="sidebar">
+            <button class="options-button" id="go-to-options" title="Options"></button>
+            <button class="autofill-button" id="autofill-btn" title="Auto Refresh"></button>
+        </div>
+        
+        <!-- Error message bar -->
+        <div id="msg" class="error-bar hidden"></div>
+
+        <!-- Scripts -->
+        <script src="menu-config.js"></script>
+        <script src="menu.js"></script>
+    </body>
 </html> 

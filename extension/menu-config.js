@@ -135,5 +135,83 @@ const MENU_CONFIG = {
         helpText: "Sometimes the tab for the SSO process needs to be visible due to requiring user interaction. Select False to hide it."
       }
     ]
+  },
+  
+  // Menu-specific configuration
+  menu: {
+    // Default values for options
+    defaults: {
+      organization_domain: '',
+      google_spid: '',
+      google_idpid: '',
+      saml_provider: 'gsuite',
+      refresh_interval: 59,
+      session_duration: 3600,
+      platform: getPlatform(),
+      clientupdate: false,
+      idp_type: 'google',
+      refresh_interval_sso: 360,
+      awssso_subdomain: '',
+      saml_idp_domain: '',
+      sso_tab_visible: "true"
+    },
+    
+    // UI Configuration
+    ui: {
+      maxRoles: 10, // Maximum number of roles that can be displayed
+      defaultRoleCount: 1,
+      buttonSize: '26px',
+      sidebarWidth: '30px'
+    },
+    
+    // Button states and styling
+    buttons: {
+      sts: {
+        defaultImage: '/img/cli.png',
+        loadingImage: '/img/loading.gif',
+        errorImage: '/img/err.png',
+        hoverColor: '#ff5400',
+        size: '26px'
+      },
+      console: {
+        defaultImage: '/img/console_btn.png',
+        size: '26px'
+      },
+      options: {
+        image: '/img/options.png',
+        size: '24px'
+      },
+      autofill: {
+        image: '/img/auto.png',
+        size: '29px',
+        enabledColor: '#ff5400',
+        disabledColor: '#4d4d4d'
+      }
+    },
+    
+    // IDP-specific behavior
+    idpBehavior: {
+      awssso: {
+        enableAllButtons: true,
+        dynamicCredentials: true,
+        consoleUrlTemplate: 'https://perception-point.awsapps.com/start/#/console?account_id={accountId}&role_name={roleName}',
+        federationUrlTemplate: 'https://portal.sso.{region}.amazonaws.com/federation/credentials?account_id={accountId}&role_name={roleName}'
+      },
+      google: {
+        enableAllButtons: false,
+        dynamicCredentials: false
+      }
+    }
   }
-}; 
+};
+
+// Helper function to get platform
+function getPlatform() {
+  let platform = navigator?.userAgentData?.platform || navigator?.platform || 'unknown';
+  return platform;
+}
+
+// Export for use in other files
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = MENU_CONFIG;
+} 

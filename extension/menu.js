@@ -1,11 +1,6 @@
-const storage = getApi().storage.local
-//default values for options. 
-var defaults = {organization_domain: '', google_spid: '', google_idpid: '',
-saml_provider: 'gsuite', refresh_interval: 59, session_duration: 3600, 
-platform: getPlatform(), clientupdate: false, idp_type: 'google',
-refresh_interval_sso: 360, awssso_subdomain: '', saml_idp_domain: '',
-sso_tab_visible: "true"
-}
+// Chrome extension compatibility
+let storage;
+let api;
 
 function getApi() {
   if (typeof chrome !== "undefined") {
@@ -15,339 +10,434 @@ function getApi() {
       return chrome;
     }
   }
+  return null;
 }
 
-document.querySelector('#go-to-options').addEventListener('click', function() {
-  if (chrome.runtime.openOptionsPage) {
-    chrome.runtime.openOptionsPage();
+// Initialize API and storage
+function initializeAPI() {
+  api = getApi();
+  if (api && api.storage) {
+    storage = api.storage.local;
+    debug('Chrome extension API initialized');
+    return true;
   } else {
-    window.open(chrome.runtime.getURL('options.html'));
+    debug('Chrome extension API not available');
+    return false;
+  }
+}
+
+// Debug function
+function debug(message, data = null) {
+  console.log(`[AWS AlwaysON Menu] ${message}`, data);
+}
+
+// Initialize the application
+$(document).ready(function() {
+  debug('Document ready, initializing...');
+  
+  // Initialize API
+  initializeAPI();
+  
+  // Check if MENU_CONFIG is available
+  if (typeof MENU_CONFIG === 'undefined') {
+    debug('ERROR: MENU_CONFIG not found!');
+    showError('Configuration not loaded. Please refresh the page.');
+    return;
+  }
+  
+  debug('MENU_CONFIG loaded successfully');
+  
+  try {
+    main();
+    setupEventListeners();
+    debug('Initialization complete');
+  } catch (error) {
+    debug('Error during initialization:', error);
+    showError('Failed to initialize menu: ' + error.message);
   }
 });
 
-function handleTextboxes(props){
-  //populate the textboxes from local storage
-  $("input[id^='role']").each(function(){
-    if ($(this).prop("readonly")) {
-      $(this).css("background-color","#cccccc")
+function showError(message) {
+  const errorBar = $('#msg');
+  errorBar.text(message).removeClass('hidden');
+}
+
+function hideError() {
+  $('#msg').addClass('hidden');
+}
+
+// Options button click handler
+function setupEventListeners() {
+  debug('Setting up event listeners...');
+  
+  // Options button
+  $('#go-to-options').click(function() {
+    if (chrome.runtime.openOptionsPage) {
+      chrome.runtime.openOptionsPage();
     } else {
-      $(this).css("background-color","#ffffff")
-    }
-    let id = $(this).attr("id")
-    let currentRoleTxtBox = $(this)
-    if (typeof props[id] !== 'undefined') {
-      currentRoleTxtBox.val(props[id]);
+      window.open(chrome.runtime.getURL('options.html'));
     }
   });
-};
-
-function setStsButton(item, props) {
-  if(props.last_msg.includes('err')){
-      $(item).css("background-image","url(/img/err.png)");
-      $(item).css("visibility","visible");
-      $(item).css("pointer-events","none");
-      $("#msg").text(props.last_msg_detail);
+  
+  // Autofill button
+  $('#autofill-btn').click(function() {
+    const isEnabled = $(this).hasClass('enabled');
+    if (!isEnabled) {
+      storage.set({"autofill": 1});
+      $(this).addClass('enabled');
+      refreshRolesBackend();
     } else {
-      $(item).css("visibility","visible");
+      storage.set({"autofill": 0});
+      $(this).removeClass('enabled');
+      location.reload();
     }
+  });
+  
+  debug('Event listeners set up');
 }
 
-function setConsoleButton(item, props) {
-  if(props.last_msg.includes('err')){
-      $(item).css("visibility","hidden");
-      $(item).css("pointer-events","none");
+function handleTextboxes(props) {
+  debug('Handling textboxes...');
+  
+  $("input[id^='role']").each(function() {
+    const input = $(this);
+    const isReadonly = input.prop("readonly");
+    
+    if (isReadonly) {
+      input.addClass('bg-gray-200');
     } else {
-      $(item).css("visibility","visible");
+      input.removeClass('bg-gray-200');
     }
+    
+    const id = input.attr("id");
+    if (typeof props[id] !== 'undefined') {
+      input.val(props[id]);
+    }
+  });
 }
 
-function populateCheckboxesAndButtons(props){
+function setStsButton(button, props) {
+  const btn = $(button);
+  
+  if (props.last_msg && props.last_msg.includes('err')) {
+    btn.css("background-image", "url(/img/err.png)");
+    btn.removeClass('hidden');
+    btn.css("pointer-events", "none");
+    showError(props.last_msg_detail);
+  } else {
+    btn.removeClass('hidden');
+    btn.css("pointer-events", "auto");
+  }
+}
+
+function setConsoleButton(button, props) {
+  const btn = $(button);
+  
+  if (props.last_msg && props.last_msg.includes('err')) {
+    btn.addClass('hidden');
+    btn.css("pointer-events", "none");
+  } else {
+    btn.removeClass('hidden');
+    btn.css("pointer-events", "auto");
+  }
+}
+
+function populateCheckboxesAndButtons(props) {
+  debug('Populating checkboxes and buttons...');
+  
   if (typeof props.checked !== 'undefined') {
-    //get the currently checked checkbox
-    let dataIndex = $(`#${props.checked}`).attr("data-index");
-    //find the checkbox with the same data-index as the role and set it as checked.
-    $(`input[id^='enable'][type='checkbox'][data-index=${dataIndex}]`).each(function(){
-      $(this).prop("checked", true);
-    });
-    if (props.idp_type==="awssso") {
-      // in aws sso, we enable all sso and console buttons..
-      $(`[id^='sts_button']`).each(function(){
-        setStsButton(this, props)
+    const dataIndex = $(`#${props.checked}`).attr("data-index");
+    
+    // Set the checkbox as checked
+    $(`input[id^='enable'][type='checkbox'][data-index=${dataIndex}]`).prop("checked", true);
+    
+    if (props.idp_type === "awssso") {
+      // In AWS SSO, enable all buttons
+      $('[id^="sts_button"]').each(function() {
+        setStsButton(this, props);
       });
-      $(`[id^='console_btn']`).each(function(){
-        setConsoleButton(this, props)
+      $('[id^="console_btn"]').each(function() {
+        setConsoleButton(this, props);
       });
-    }
-    else {  
-      //enable the relevant sts button if something is already checked.
-      $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function(){
-        setStsButton(this, props)
+    } else {
+      // Enable only the relevant STS button
+      $(`[id^="sts_button"][data-index=${dataIndex}]`).each(function() {
+        setStsButton(this, props);
       });
     }
   }
   
-  //if autofill is enabled make all textboxes readonly
-  if(props.autofill==1) {
-    $('#autofill_btn').css({"background-color":"#ff5400","--enabled":1})
+  // Handle autofill state
+  if (props.autofill == 1) {
+    $('#autofill-btn').addClass('enabled');
   }
-};
+}
 
 async function exportStsToClipboard(platform, credentials) {
-  let stsCommand
+  let stsCommand;
   switch (platform.toLowerCase()) {
     case 'windows':
     case 'win32':
-        stsCommand = "set"
-        break;
+      stsCommand = "set";
+      break;
     default:
-        stsCommand = "export"
+      stsCommand = "export";
   }
-  let stscli = [
-    `${stsCommand} AWS_ACCESS_KEY_ID=${credentials.awsAccessKeyId||credentials.accessKeyId}`,
-    `${stsCommand} AWS_SECRET_ACCESS_KEY=${credentials.awsSecretAccessKey||credentials.secretAccessKey}`,
-    `${stsCommand} AWS_SESSION_TOKEN=${credentials.awsSessionToken||credentials.sessionToken}`,
-    `${stsCommand} AWS_SESSION_EXPIRATION=${credentials.awsExpiration||credentials.expiration}`,
-  ]
-  navigator.clipboard.writeText(stscli.join("&&")).then(() => {
-    alert("token copied to clipboard");
-  }, () => {
-    alert("failed copying to clipboard");
-  });
+  
+  const stscli = [
+    `${stsCommand} AWS_ACCESS_KEY_ID=${credentials.awsAccessKeyId || credentials.accessKeyId}`,
+    `${stsCommand} AWS_SECRET_ACCESS_KEY=${credentials.awsSecretAccessKey || credentials.secretAccessKey}`,
+    `${stsCommand} AWS_SESSION_TOKEN=${credentials.awsSessionToken || credentials.sessionToken}`,
+    `${stsCommand} AWS_SESSION_EXPIRATION=${credentials.awsExpiration || credentials.expiration}`,
+  ];
+  
+  try {
+    await navigator.clipboard.writeText(stscli.join("&&"));
+    alert("Token copied to clipboard");
+  } catch (error) {
+    alert("Failed copying to clipboard");
+    debug('Clipboard error:', error);
+  }
 }
 
-async function refreshRolesBackend(){
-  let port = chrome.runtime.connect({
+async function refreshRolesBackend() {
+  debug('Refreshing roles backend...');
+  
+  const port = chrome.runtime.connect({
     name: "talk to background.js"
-  });       
+  });
+  
   port.postMessage('role_refresh');
   port.onMessage.addListener(function(msg) {
-    if (msg=='roles_refreshed'){
+    if (msg === 'roles_refreshed') {
       location.reload();
     } else if (msg.includes('err')) {
-      storage.get(['last_msg_detail'], function(result){
-        $("#msg").text(result.last_msg_detail);
-      })            
+      storage.get(['last_msg_detail'], function(result) {
+        showError(result.last_msg_detail);
+      });
     } else {
-      console.log("Service worker response:" + msg);
-    }
-  });  
-}
-
-async function buildMenu(props){
-  for (let i = 0; i < parseInt(props.roleCount); i++) {
-    jQuery('<div>', {
-      id: `item${i}`,
-      class: `item${i}`,
-    }).appendTo('#grid');
-
-    let textboxProperties = {
-      type:"text",
-      value:"",
-      id: `role${i}`,
-      placeholder:"Role",
-      class: "txtbox",
-      "data-index": i
-    }
-    //if autofill is enabled make all textboxes readonly
-    if(props.autofill==1) {
-      textboxProperties['readonly'] = "readonly"
-      $('.txtbox').css("pointer-events","none");
-    }
-    jQuery('<input>', textboxProperties).appendTo(`#item${i}`);
-
-    jQuery('<button>', {
-      class:"button clibtn",
-      id: `sts_button${i}`,
-      "data-index": i
-    }).appendTo(`#item${i}`);
-    
-    jQuery('<button>', {
-      class:"button console_btn",
-      id: `console_btn${i}`,
-      "data-index": i
-    }).appendTo(`#item${i}`);
-    
-    jQuery('<label>', {
-      id: `label${i}`,
-      class:"switch btncls"
-    }).appendTo(`#item${i}`);
-
-    jQuery('<input>', {
-      type: "checkbox",
-      id: `enable${i}`,
-      "data-index": i
-    }).appendTo(`#label${i}`);
-    
-    jQuery('<span>', {
-      class:"slider round"
-    }).appendTo(`#label${i}`);
-  }
-  handleTextboxes(props)
-  populateCheckboxesAndButtons(props)
-}
-
-function getPlatform(){
-  let platform = navigator?.userAgentData?.platform || navigator?.platform || 'unknown'
-  return platform
-}
-
-async function main(){
-  let props = await storage.get(null)
-  //set default values if undefined or empty
-  Object.keys(defaults).forEach(function(item) {
-    if(!(item in props) || props[item]===undefined || props[item]===""){
-      storage.set({[item]: defaults[item]})
-    }
-  })
-  //need to refresh it again..
-  props = await storage.get(null)
-  if(props.roleCount===undefined){
-    storage.set({'roleCount':1})
-    $('#go-to-options').click()
-  }
-  buildMenu(props)
-  $("#clibtn").hover(function () {
-    alert($(this).prop("title")); 
-  });
-  //interation with autofill btn.
-  $('#autofill_btn').click(function() {
-    if($(this).css("--enabled") == 0){   
-      storage.set({"autofill": 1})
-      $(this).css({"background-color":"#ff5400","--enabled":1})
-      refreshRolesBackend()
-    } else {
-      storage.set({"autofill": 0})
-      $(this).css({"background-color":"#4d4d4d","--enabled":0})
-      location.reload();
+      debug("Service worker response:", msg);
     }
   });
-  //uncheck all checkboxes when modifying role ARNs
+}
+
+function buildMenu(props) {
+  debug('Building menu...');
+  
+  const roleGrid = $('#role-grid');
+  roleGrid.empty();
+  
+  const roleCount = parseInt(props.roleCount) || MENU_CONFIG.menu.ui.defaultRoleCount;
+  
+  for (let i = 0; i < roleCount; i++) {
+    const roleItem = $(`
+      <div class="bg-white/90 p-2 flex items-center justify-between" data-index="${i}">
+        <div class="flex items-center space-x-2 flex-1">
+          <input type="text" 
+                 id="role${i}" 
+                 class="role-input" 
+                 placeholder="Role" 
+                 data-index="${i}"
+                 ${props.autofill == 1 ? 'readonly' : ''}>
+          
+          <button class="action-button sts-button hidden" 
+                  id="sts_button${i}" 
+                  data-index="${i}" 
+                  title="Click to copy STS credentials to clipboard"></button>
+          
+          <button class="action-button console-button hidden" 
+                  id="console_btn${i}" 
+                  data-index="${i}" 
+                  title="Open AWS Console"></button>
+        </div>
+        
+        <label class="toggle-switch ml-2">
+          <input type="checkbox" id="enable${i}" data-index="${i}">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    `);
+    
+    roleGrid.append(roleItem);
+  }
+  
+  handleTextboxes(props);
+  populateCheckboxesAndButtons(props);
+  setupRoleEventListeners(props);
+}
+
+function setupRoleEventListeners(props) {
+  debug('Setting up role event listeners...');
+  
+  // Role input focus - uncheck all checkboxes
   $("input[id^='role']").focus(function() {
-    $("input[id^='enable'][type='checkbox']").each(function(index, obj){
-      $(this).prop("checked", false);
-    });
-    let port = chrome.runtime.connect({
+    $("input[id^='enable'][type='checkbox']").prop("checked", false);
+    
+    const port = chrome.runtime.connect({
       name: "talk to background.js"
-    });       
+    });
     port.postMessage('refreshoff');
   });
-  //Save data to local storage automatically when not focusing on TxtBox
+  
+  // Role input focusout - save to storage
   $("input[id^='role']").focusout(function() {
-    let roleName = $(this).attr("id")
-    let roleValue = $(this).val()
-    let obj ={
-      [roleName]:roleValue
-    }
+    const roleName = $(this).attr("id");
+    const roleValue = $(this).val();
+    const obj = { [roleName]: roleValue };
     storage.set(obj);
   });
-  //get the STS token from storage when clicking the CLI button.
+  
+  // Console button click
   $('[id^="console_btn"]').click(async function() {
-    let index = $(this).attr("data-index")
-
-    // in aws sso, clicking the cli command fetches the data dynamically.
-    if (props.idp_type==="awssso") {
-      let accountId = props[`role${index}_acc`]
-      let role = props[`role${index}_name`]
-      let targetUrl = `https://perception-point.awsapps.com/start/#/console?account_id=${accountId}&role_name=${role}`
-      getApi().tabs.create({ url: targetUrl, active: true })
+    const index = $(this).attr("data-index");
+    
+    if (props.idp_type === "awssso") {
+      const accountId = props[`role${index}_acc`];
+      const role = props[`role${index}_name`];
+      const targetUrl = MENU_CONFIG.menu.idpBehavior.awssso.consoleUrlTemplate
+        .replace('{accountId}', accountId)
+        .replace('{roleName}', role);
+      
+      api.tabs.create({ url: targetUrl, active: true });
     }
   });
+  
+  // STS button click
   $('[id^="sts_button"]').click(async function() {
-    let index = $(this).attr("data-index")
-
-    // in aws sso, clicking the cli command fetches the data dynamically.
-    if (props.idp_type==="awssso") {
-      let accountId = props[`role${index}_acc`]
-      let role = props[`role${index}_name`]
-      let region = props.amz_rgn
-      let headers=props.amz_hdr
-      let baseUrl = `https://portal.sso.${region}.amazonaws.com/federation/credentials?account_id=${accountId}&role_name=${role}`
-
-      const credsResponse = await fetch(baseUrl, {
-        method: "GET",
-        headers: headers
-      });
-      const creds = await credsResponse.json();
-      if (credsResponse.ok) {
-        exportStsToClipboard(props.platform, creds.roleCredentials)
-        // console.log(creds.roleCredentials)
-      }
-      else {
-        console.log(`response from federation endpoint was not ok, ${creds.message}`)
-        refreshRolesBackend()
-      }
-    }
-    else {
-      if ($(`#enable${index}`).prop("checked")){
-        storage.get(["platform","awsAccessKeyId","awsSecretAccessKey","awsSessionToken","awsExpiration"], function(data) {
-          exportStsToClipboard(data.platform, data)
-      });
-      }
-    }
-});
-  //Action when a checkbox is changed
-  $("input[id^='enable'][type='checkbox']").change(function() {
-    $("#msg").text("");
-    let id = $(this).attr("id")
-    let dataIndex = $(this).attr("data-index")
-    if (props.idp_type==="awssso") {
-      // in aws sso we do not hide anything since they are all available.
-    }
-    else{
-      // hide all sts buttons
-      $("[id^='sts_button']").each(function(){
-          $(this).css("visibility","hidden");
-      })
-    }
-    if(!this.checked){
-        let port = chrome.runtime.connect({
-          name: "talk to background.js"
-        });         
-        port.postMessage('refreshoff');
-    }
-    else {
-      //uncheck other checkboxes.
-      $("input[id^='enable'][type='checkbox']").each(function(){
-        if($(this).attr("id")!=id){
-          $(this).prop("checked", false)
+    const index = $(this).attr("data-index");
+    
+    if (props.idp_type === "awssso") {
+      const accountId = props[`role${index}_acc`];
+      const role = props[`role${index}_name`];
+      const region = props.amz_rgn;
+      const headers = props.amz_hdr;
+      
+      const baseUrl = MENU_CONFIG.menu.idpBehavior.awssso.federationUrlTemplate
+        .replace('{accountId}', accountId)
+        .replace('{roleName}', role)
+        .replace('{region}', region);
+      
+      try {
+        const credsResponse = await fetch(baseUrl, {
+          method: "GET",
+          headers: headers
+        });
+        
+        const creds = await credsResponse.json();
+        
+        if (credsResponse.ok) {
+          exportStsToClipboard(props.platform, creds.roleCredentials);
+        } else {
+          debug(`Federation endpoint error: ${creds.message}`);
+          refreshRolesBackend();
         }
-      })
-      //enable sts loading button
-      $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function(){
-        $(this).css("background-image","url(/img/loading.gif)");
-        $(this).css("visibility","visible");
-        $(this).css("pointer-events","none");
-      })
-      //set the roleTxtBox with the same data-index as the as checked.
-      $(`input[id^='role'][data-index=${dataIndex}]`).each(function(){
-          storage.set({'checked':$(this).attr("id")});
-      })
-      //start background service functions
-      let port = chrome.runtime.connect({
+      } catch (error) {
+        debug('Fetch error:', error);
+        refreshRolesBackend();
+      }
+    } else {
+      if ($(`#enable${index}`).prop("checked")) {
+        storage.get(["platform", "awsAccessKeyId", "awsSecretAccessKey", "awsSessionToken", "awsExpiration"], function(data) {
+          exportStsToClipboard(data.platform, data);
+        });
+      }
+    }
+  });
+  
+  // Checkbox change
+  $("input[id^='enable'][type='checkbox']").change(function() {
+    hideError();
+    
+    const id = $(this).attr("id");
+    const dataIndex = $(this).attr("data-index");
+    
+    if (props.idp_type === "awssso") {
+      // In AWS SSO, we don't hide anything since they are all available
+    } else {
+      // Hide all STS buttons
+      $("[id^='sts_button']").addClass('hidden');
+    }
+    
+    if (!this.checked) {
+      const port = chrome.runtime.connect({
         name: "talk to background.js"
-      });      
+      });
+      port.postMessage('refreshoff');
+    } else {
+      // Uncheck other checkboxes
+      $("input[id^='enable'][type='checkbox']").each(function() {
+        if ($(this).attr("id") !== id) {
+          $(this).prop("checked", false);
+        }
+      });
+      
+      // Enable STS loading button
+      $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function() {
+        $(this).css("background-image", "url(/img/loading.gif)");
+        $(this).removeClass('hidden');
+        $(this).css("pointer-events", "none");
+      });
+      
+      // Set the role textbox as checked
+      $(`input[id^='role'][data-index=${dataIndex}]`).each(function() {
+        storage.set({ 'checked': $(this).attr("id") });
+      });
+      
+      // Start background service
+      const port = chrome.runtime.connect({
+        name: "talk to background.js"
+      });
+      
       port.postMessage("refreshon");
       port.onMessage.addListener(function(msg) {
-        //if sts fetch went fine enable the cli button.
-        if(msg=='sts_ready') {
-          $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function(){
-            $(this).css("background-image","url(/img/cli.png)");
-            $(this).prop("title","Click to copy STS credentials to clipboard.")
-            $(this).css("pointer-events","");
-          })
+        if (msg === 'sts_ready') {
+          $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function() {
+            $(this).css("background-image", "url(/img/cli.png)");
+            $(this).prop("title", "Click to copy STS credentials to clipboard.");
+            $(this).css("pointer-events", "auto");
+          });
         } else if (msg.includes('err')) {
-          $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function(){
-            $(this).css("background-image","url(/img/err.png)");
-            storage.get(['last_msg_detail'], function(result){
-              $("#msg").text(result.last_msg_detail);
-            })            
-          })
+          $(`[id^='sts_button'][data-index=${dataIndex}]`).each(function() {
+            $(this).css("background-image", "url(/img/err.png)");
+            storage.get(['last_msg_detail'], function(result) {
+              showError(result.last_msg_detail);
+            });
+          });
+        } else {
+          debug("Service worker response:", msg);
         }
-        else {
-          console.log("Service worker response:" + msg);
-        }
-      })
-    } 
-  })
+      });
+    }
+  });
 }
-main()
+
+async function main() {
+  debug('Starting main function...');
+  
+  let props = await storage.get(null);
+  
+  // Set default values if undefined or empty
+  Object.keys(MENU_CONFIG.menu.defaults).forEach(function(item) {
+    if (!(item in props) || props[item] === undefined || props[item] === "") {
+      storage.set({ [item]: MENU_CONFIG.menu.defaults[item] });
+    }
+  });
+  
+  // Refresh props after setting defaults
+  props = await storage.get(null);
+  
+  if (props.roleCount === undefined) {
+    storage.set({ 'roleCount': MENU_CONFIG.menu.ui.defaultRoleCount });
+    $('#go-to-options').click();
+    return;
+  }
+  
+  buildMenu(props);
+  
+  // CLI button hover tooltip
+  $("#sts_button").hover(function() {
+    alert($(this).prop("title"));
+  });
+  
+  debug('Main function completed');
+}
