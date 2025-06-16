@@ -444,6 +444,37 @@ async function permissionValidator(option, value) {
   debug(`Validating option: ${option} = ${value}`);
   
   if (option === "saml_idp_domain") {
+    // Revoke previous IDP domain permissions if different from current
+    if (props.saml_idp_domain && props.saml_idp_domain !== value) {
+      debug(`Revoking permissions for previous IDP domain: ${props.saml_idp_domain}`);
+      const previousIdpPermission = {
+        origins: [`https://${props.saml_idp_domain}/*`]
+      };
+      
+      try {
+        await new Promise((resolve) => {
+          // Check if the permission is actually granted before trying to revoke
+          api.permissions.contains(previousIdpPermission, (hasPermission) => {
+            if (hasPermission) {
+              api.permissions.remove(previousIdpPermission, (removed) => {
+                if (removed) {
+                  debug(`Successfully revoked permissions for ${props.saml_idp_domain}`);
+                } else {
+                  debug(`Failed to revoke permissions for ${props.saml_idp_domain}`);
+                }
+                resolve();
+              });
+            } else {
+              debug(`Permissions for ${props.saml_idp_domain} not granted, skipping revocation`);
+              resolve();
+            }
+          });
+        });
+      } catch (error) {
+        debug(`Error revoking permissions for ${props.saml_idp_domain}:`, error);
+      }
+    }
+    
     // Only request permissions if the value is not empty and different from current
     if (value && value !== '' && props.saml_idp_domain !== value) {
       debug(`Updated IDP domain, requesting permissions for ${value}`);
@@ -478,6 +509,75 @@ async function permissionValidator(option, value) {
   }
   
   if (option === "idp_type") {
+    // Revoke AWS SSO permissions if switching away from AWS SSO
+    if (props.idp_type === "awssso" && value !== "awssso") {
+      debug("Switching away from AWS SSO, revoking permissions");
+      permissionValidationInProgress[option] = true;
+      
+      try {
+        await new Promise((resolve) => {
+          // Check what AWS SSO permissions are actually granted before revoking
+          api.permissions.contains(awsSsoPermissions, (hasAllPermissions) => {
+            if (hasAllPermissions) {
+              // All permissions are granted, revoke the full set
+              api.permissions.remove(awsSsoPermissions, (removed) => {
+                if (removed) {
+                  debug("Successfully revoked all AWS SSO permissions");
+                } else {
+                  debug("Failed to revoke AWS SSO permissions");
+                }
+                resolve();
+              });
+            } else {
+              // Check individual permissions and revoke only what's granted
+              debug("Not all AWS SSO permissions are granted, checking individual permissions");
+              const individualPermissions = [
+                { permissions: ["tabs"] },
+                { permissions: ["windows"] },
+                { origins: ["https://*.awsapps.com/*"] },
+                { origins: ["https://*.amazonaws.com/*"] }
+              ];
+              
+              let revokedCount = 0;
+              let totalChecks = individualPermissions.length;
+              
+              individualPermissions.forEach(permission => {
+                api.permissions.contains(permission, (hasPermission) => {
+                  if (hasPermission) {
+                    api.permissions.remove(permission, (removed) => {
+                      if (removed) {
+                        debug(`Successfully revoked permission:`, permission);
+                        revokedCount++;
+                      } else {
+                        debug(`Failed to revoke permission:`, permission);
+                      }
+                      
+                      totalChecks--;
+                      if (totalChecks === 0) {
+                        debug(`Revoked ${revokedCount} individual AWS SSO permissions`);
+                        resolve();
+                      }
+                    });
+                  } else {
+                    debug(`Permission not granted, skipping:`, permission);
+                    totalChecks--;
+                    if (totalChecks === 0) {
+                      debug(`Revoked ${revokedCount} individual AWS SSO permissions`);
+                      resolve();
+                    }
+                  }
+                });
+              });
+            }
+          });
+        });
+      } catch (error) {
+        debug("Error revoking AWS SSO permissions:", error);
+      }
+      
+      permissionValidationInProgress[option] = false;
+    }
+    
     if (value === "awssso") {
       debug("Enabled AWS SSO, adding new permissions");
       permissionValidationInProgress[option] = true;
