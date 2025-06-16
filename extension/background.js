@@ -324,10 +324,10 @@ async function extractAwsSSOToken(awssso_subdomain, port) {
         
         // Create a new tab using Chrome extension API
         const tab = await new Promise((resolve, reject) => {
-            getApi().tabs.create({ url: targetUrl, active: sso_tab_visible }, (newTab) => {
-                if (getApi().runtime.lastError) {
+            createTabWithRetry({ url: targetUrl, active: sso_tab_visible }, (newTab, err) => {
+                if (err) {
                     isProcessingTab = false;  // Reset flag on error
-                    reject(new Error(getApi().runtime.lastError.message));
+                    reject(new Error(err.message));
                 } else {
                     resolve(newTab);
                 }
@@ -358,7 +358,11 @@ async function extractAwsSSOToken(awssso_subdomain, port) {
                         storage.set({ amz_hdr: headersObject });
                         storage.set({ amz_rgn: region });
                         fetchSSOData(headersObject, region, port)
-                        getApi().tabs.remove(tab.id)
+                        removeTabWithRetry(tab.id, (err) => {
+                            if (err) {
+                                console.error('Failed to remove tab:', err.message);
+                            }
+                        });
                         clearTimeout(timeoutId);  // Clear the timeout
                         isProcessingTab = false;  // Reset the flag after successful processing
                     }
@@ -503,7 +507,7 @@ chrome.windows.onFocusChanged.addListener(async (windowId) => {
 function awsInit(props, port=null, jobType='refresh'){
     let idp_name = props['idp_type']||"none"
     console.log(`idp_name: ${idp_name}, jobType: ${jobType}`)
-    if (port || idp_type!=="awssso"){
+    if (port || idp_name!=="awssso"){
         const credExtractor = credExtractors[idp_name]
         credExtractor(props, port, jobType)
     }
@@ -520,6 +524,67 @@ async function alarmLock(alarmName, refreshInterval) {
         }
     }
   }
+
+// Helper functions for tab operations with retry logic
+function createTabWithRetry(tabOptions, callback, retries = 3, delay = 1000) {
+    getApi().tabs.create(tabOptions, (newTab) => {
+        if (getApi().runtime.lastError) {
+            if (
+                getApi().runtime.lastError.message &&
+                getApi().runtime.lastError.message.includes("Tabs cannot be edited right now") &&
+                retries > 0
+            ) {
+                setTimeout(() => {
+                    createTabWithRetry(tabOptions, callback, retries - 1, delay);
+                }, delay);
+            } else {
+                callback(null, getApi().runtime.lastError);
+            }
+        } else {
+            callback(newTab, null);
+        }
+    });
+}
+
+function removeTabWithRetry(tabId, callback, retries = 3, delay = 1000) {
+    getApi().tabs.remove(tabId, () => {
+        if (getApi().runtime.lastError) {
+            if (
+                getApi().runtime.lastError.message &&
+                getApi().runtime.lastError.message.includes("Tabs cannot be edited right now") &&
+                retries > 0
+            ) {
+                setTimeout(() => {
+                    removeTabWithRetry(tabId, callback, retries - 1, delay);
+                }, delay);
+            } else {
+                callback(getApi().runtime.lastError);
+            }
+        } else {
+            callback(null);
+        }
+    });
+}
+
+function updateTabWithRetry(tabId, updateProps, callback, retries = 3, delay = 1000) {
+    getApi().tabs.update(tabId, updateProps, (tab) => {
+        if (getApi().runtime.lastError) {
+            if (
+                getApi().runtime.lastError.message &&
+                getApi().runtime.lastError.message.includes("Tabs cannot be edited right now") &&
+                retries > 0
+            ) {
+                setTimeout(() => {
+                    updateTabWithRetry(tabId, updateProps, callback, retries - 1, delay);
+                }, delay);
+            } else {
+                callback(null, getApi().runtime.lastError);
+            }
+        } else {
+            callback(tab, null);
+        }
+    });
+}
 
 async function main() {
     getApi().runtime.onConnect.addListener(function(port) {
