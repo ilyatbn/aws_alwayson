@@ -81,6 +81,7 @@ function setupEventListeners() {
   
   // Autofill button
   $('#autofill-btn').click(function() {
+    hideError();
     const isEnabled = $(this).hasClass('enabled');
     if (!isEnabled) {
       storage.set({"autofill": 1});
