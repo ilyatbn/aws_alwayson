@@ -26,9 +26,23 @@ function initializeAPI() {
   }
 }
 
-// Debug function
+// debug log. enable when necessary.
+let debugEnabled = false;
+
+// Initialize debug setting
+async function initializeDebug() {
+  try {
+    const props = await storage.get(['debug_logging']);
+    debugEnabled = props.debug_logging || false;
+  } catch (error) {
+    debugEnabled = false;
+  }
+}
+
 function debug(message, data = null) {
-  console.log(`[AWS AlwaysON Menu] ${message}`, data);
+  if (debugEnabled) {
+    console.log(`[AWS AlwaysON Menu] ${message}`, data);
+  }
 }
 
 // Initialize the application
@@ -163,7 +177,7 @@ function populateCheckboxesAndButtons(props) {
     
     if (props.idp_type === "awssso") {
       // In AWS SSO, enable all buttons
-      console.log("awssso all buttons should be enabled already.")
+      debug("awssso all buttons should be enabled already.")
     } else {
       // Enable only the relevant STS button
       $(`[id^="sts_button"][data-index=${dataIndex}]`).each(function() {
@@ -453,6 +467,9 @@ function setupRoleEventListeners(props) {
 async function main() {
   debug('Starting main function...');
   
+  // Initialize debug setting
+  await initializeDebug();
+  
   let props = await storage.get(null);
   
   // Set default values if undefined or empty
@@ -479,4 +496,9 @@ async function main() {
   });
   
   debug('Main function completed');
+}
+
+// Function to update debug setting when it changes
+async function updateDebugSetting() {
+  await initializeDebug();
 }

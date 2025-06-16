@@ -63,16 +63,33 @@ let isExtensionContext = false;
 let permissionValidationInProgress = {}; // Track ongoing permission validations
 
 // Debug function
+let debugEnabled = false;
+
+// Initialize debug setting
+async function initializeDebug() {
+  try {
+    const props = await storage.get(['debug_logging']);
+    debugEnabled = props.debug_logging || false;
+  } catch (error) {
+    debugEnabled = false;
+  }
+}
+
 function debug(message, data = null) {
-  console.log(`[AWS AlwaysON Options] ${message}`, data);
+  if (debugEnabled) {
+    console.log(`[AWS AlwaysON Options] ${message}`, data);
+  }
 }
 
 // Initialize the application
-$(document).ready(function() {
+$(document).ready(async function() {
   debug('Document ready, initializing...');
   
   // Initialize API
   isExtensionContext = initializeAPI();
+  
+  // Initialize debug setting
+  await initializeDebug();
   
   // Check if MENU_CONFIG is available
   if (typeof MENU_CONFIG === 'undefined') {
@@ -372,6 +389,11 @@ async function saveField(fieldId, fieldValue) {
       await storage.set(obj);
       showToast('Setting saved successfully!', 'success');
       debug(`Field saved successfully: ${fieldId}`);
+      
+      // Update debug setting if debug_logging field was changed
+      if (fieldId === 'debug_logging') {
+        await updateDebugSetting();
+      }
     } else {
       showToast('Permission validation failed', 'error');
       debug(`Permission validation failed for: ${fieldId}`);
@@ -548,4 +570,9 @@ $('.tablinks').click(function(){
 });
 
 $( document ).ready(loadOptions)
+
+// Function to update debug setting when it changes
+async function updateDebugSetting() {
+  await initializeDebug();
+}
 

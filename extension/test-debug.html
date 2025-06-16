@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS AlwaysON - Debug Logging Test</title>
+    <script src="/js/tailwind.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <div class="flex items-center space-x-3 mb-6">
+            <img src="/img/icon128.png" alt="AWS AlwaysON" class="w-8 h-8 rounded-lg">
+            <h1 class="text-2xl font-bold">AWS AlwaysON Debug Logging Test</h1>
+        </div>
+        
+        <div id="test-results" class="space-y-4">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 class="font-medium text-blue-800">Debug Logging Test Results</h3>
+                <div id="results-content">Loading...</div>
+            </div>
+            
+            <div class="bg-white border border-gray-200 rounded-lg p-4">
+                <h3 class="font-medium text-gray-800 mb-4">Test Controls</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="debug_logging" class="form-checkbox h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded">
+                        <label for="debug_logging" class="ml-3 block text-sm font-medium text-gray-700">
+                            Enable debug logging
+                        </label>
+                    </div>
+                    <button id="test-debug" class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors">
+                        Test Debug Messages
+                    </button>
+                    <button id="clear-console" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors">
+                        Clear Console
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="menu-config.js"></script>
+    <script>
+        // Mock storage for testing
+        const mockStorage = {
+            debug_logging: false,
+            set: function(obj) {
+                Object.assign(this, obj);
+                console.log('Storage updated:', obj);
+            },
+            get: function(keys) {
+                if (Array.isArray(keys)) {
+                    const result = {};
+                    keys.forEach(key => {
+                        result[key] = this[key];
+                    });
+                    return Promise.resolve(result);
+                }
+                return Promise.resolve(this);
+            }
+        };
+
+        // Mock Chrome API
+        window.chrome = {
+            storage: {
+                local: mockStorage
+            }
+        };
+
+        // Debug function from menu.js
+        let debugEnabled = false;
+
+        async function initializeDebug() {
+            try {
+                const props = await mockStorage.get(['debug_logging']);
+                debugEnabled = props.debug_logging || false;
+                console.log('Debug enabled:', debugEnabled);
+            } catch (error) {
+                debugEnabled = false;
+            }
+        }
+
+        function debug(message, data = null) {
+            if (debugEnabled) {
+                console.log(`[AWS AlwaysON Test] ${message}`, data);
+            }
+        }
+
+        // Test script
+        $(document).ready(async function() {
+            const results = $('#results-content');
+            
+            // Initialize debug
+            await initializeDebug();
+            
+            // Test 1: Check if debug is initially disabled
+            results.append('<p class="text-gray-600">Initial debug state: ' + (debugEnabled ? 'Enabled' : 'Disabled') + '</p>');
+            
+            // Test 2: Test debug messages when disabled
+            results.append('<p class="text-gray-600">Testing debug messages when disabled...</p>');
+            debug('This message should NOT appear');
+            
+            // Test 3: Enable debug and test
+            results.append('<p class="text-gray-600">Enabling debug logging...</p>');
+            await mockStorage.set({debug_logging: true});
+            await initializeDebug();
+            results.append('<p class="text-green-600">Debug enabled: ' + (debugEnabled ? 'Yes' : 'No') + '</p>');
+            
+            // Test 4: Test debug messages when enabled
+            results.append('<p class="text-gray-600">Testing debug messages when enabled...</p>');
+            debug('This message SHOULD appear');
+            debug('Test with data', {test: 'data', number: 123});
+            
+            // Test 5: Disable debug and test
+            results.append('<p class="text-gray-600">Disabling debug logging...</p>');
+            await mockStorage.set({debug_logging: false});
+            await initializeDebug();
+            results.append('<p class="text-green-600">Debug disabled: ' + (!debugEnabled ? 'Yes' : 'No') + '</p>');
+            
+            debug('This message should NOT appear again');
+            
+            results.append('<p class="text-green-600 font-medium mt-4">✅ Debug logging test completed! Check the browser console for debug messages.</p>');
+        });
+
+        // Event listeners
+        $('#debug_logging').change(function() {
+            const enabled = $(this).prop('checked');
+            mockStorage.set({debug_logging: enabled});
+            initializeDebug();
+            console.log('Debug logging toggled:', enabled);
+        });
+
+        $('#test-debug').click(function() {
+            debug('Manual test message');
+            debug('Test with data', {timestamp: new Date(), random: Math.random()});
+        });
+
+        $('#clear-console').click(function() {
+            console.clear();
+            console.log('Console cleared');
+        });
+    </script>
+</body>
+</html> 

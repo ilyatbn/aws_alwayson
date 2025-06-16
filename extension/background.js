@@ -31,6 +31,25 @@ const credExtractors = {
 // Add this flag to track tab processing state
 let isProcessingTab = false;
 
+// Debug function
+let debugEnabled = false;
+
+// Initialize debug setting
+async function initializeDebug() {
+  try {
+    const props = await storage.get(['debug_logging']);
+    debugEnabled = props.debug_logging || false;
+  } catch (error) {
+    debugEnabled = false;
+  }
+}
+
+function debug(message, data = null) {
+  if (debugEnabled) {
+    console.log(`[AWS AlwaysON Background] ${message}`, data);
+  }
+}
+
 function doNothing(){}
 
 function getApi() {
@@ -48,7 +67,7 @@ class portWithExceptions {
             try{
                 port.postMessage(message)
             } catch(err) {
-                console.log(`Error while posting message back to menu. ${err}`)
+                debug(`Error while posting message back to menu. ${err}`)
             } finally {
                 storage.set({'last_msg_detail':message})
             }
@@ -58,7 +77,7 @@ class portWithExceptions {
                 port.postMessage(`err: ${message}`)
                 console.error(message)
             } catch(err) {
-                console.log(`Error while posting message back to menu. ${err}`)
+                debug(`Error while posting message back to menu. ${err}`)
             } finally {
                 storage.set({'last_msg':'err','last_msg_detail':message})
             }
@@ -69,7 +88,6 @@ class portWithExceptions {
 
 function confCheck(props){
     // validate relevant params for idp type
-    console.log(`checking ${props['idp_type']}`)
     if (props['idp_type']==='google'){
         if((props['organization_domain']||props['google_idpid']||props['google_spid']) === ''){
             return false
@@ -184,7 +202,7 @@ function fetchSts(roleArn, principalArn, samlResponse, props, port){
 }
 
 function googleWorkspaceExtractor(props, port=null, jobType='refresh'){
-    console.log("refreshing creds using Google Workspace")
+    debug("refreshing creds using Google Workspace")
     fetch(googleAccountChooserUrl).then(response=> {
         response.text().then(accounts=> {
             var re = new RegExp(accountSelectionRegex.replace("DOMAIN",props.organization_domain),"i");
@@ -198,7 +216,7 @@ function googleWorkspaceExtractor(props, port=null, jobType='refresh'){
                 let msg = `${accountData[2]} is not logged in. Please login and try again.`
                 throw msg
             }
-            console.log(`Refreshing credentials for ${accountData[2]}`)
+            debug(`Refreshing credentials for ${accountData[2]}`)
             fetch(`${googleSsoUrl.replace('IDPID',props.google_idpid).replace('SPID',props.google_spid)}${accountIndex}`).then(response => {   
                 response.text().then(result => {
                     if(response.status===403) {
@@ -283,7 +301,7 @@ async function fetchSSOData(headers, region, port) {
     storage.set({'roleCount': allRoles.length});
     const now = new Date().toISOString();
     storage.set({'ssoLastRefresh': now});
-    console.log(`sso refreshed at: ${now}`);
+    debug(`sso refreshed at: ${now}`);
     if (port) port.postMessage('roles_refreshed');
 }
 
@@ -309,7 +327,7 @@ function updateLocalClientCreds(creds, port){
 async function extractAwsSSOToken(awssso_subdomain, port) {
     // Check if we're already processing a tab
     if (isProcessingTab) {
-        console.log("Tab processing already in progress, skipping this request");
+        debug("Tab processing already in progress, skipping this request");
         if (port) port.postMessage('tab_already_processing');
         return;
     }
@@ -317,7 +335,7 @@ async function extractAwsSSOToken(awssso_subdomain, port) {
     let targetUrl = `https://${awssso_subdomain}.awsapps.com/start/`;
     let props = await storage.get(null)
     let sso_tab_visible = props.sso_tab_visible === "true"
-    console.log("tab active:", sso_tab_visible)
+    debug("tab active:", sso_tab_visible)
     
     try {
         isProcessingTab = true;
@@ -338,16 +356,16 @@ async function extractAwsSSOToken(awssso_subdomain, port) {
         const timeoutId = setTimeout(() => {
             isProcessingTab = false;
             console.log("Tab processing timeout - resetting state");
-        }, 30000); // 30 second timeout
+        }, 10000);
 
         getApi().webRequest.onSendHeaders.addListener(
             (details) => {
                 if (details.url.endsWith('/whoAmI')) {
-                    console.log("whoAmI request intercepted")
+                    debug("whoAmI request intercepted")
                     const header = details.requestHeaders.find(h => h.name.toLowerCase() === 'x-amz-sso-bearer-token');
                     const header_auth = details.requestHeaders.find(h => h.name.toLowerCase() === 'authorization');
                     if (header||header_auth) {
-                        console.log("found bearer token")
+                        debug("found bearer token")
                         let headers = details.requestHeaders
                         let region = details.url.split(".")[2]
                         let headersObject = headers.reduce((acc, { name, value }) => {
@@ -398,7 +416,6 @@ async function getStsCredentialsFromAwsSSO(props, retry=false){
     let region = props.amz_rgn
     let headers=props.amz_hdr
     let baseUrl = `https://portal.sso.${region}.amazonaws.com/federation/credentials?account_id=${accountId}&role_name=${role}`
-    // console.log(baseUrl)
     const credsResponse = await fetch(baseUrl, {
       method: "GET",
       headers: headers
@@ -408,10 +425,10 @@ async function getStsCredentialsFromAwsSSO(props, retry=false){
       return creds.roleCredentials
     }
     else {
-      console.log(`response from federation endpoint was not ok, ${creds.message}`)
+      debug(`response from federation endpoint was not ok, ${creds.message}`)
       awsSSOExtractor(props, null, 'role_refresh')
       if (!retry) {
-        console.log("retrying sts creds fetch")
+        debug("retrying sts creds fetch")
         getStsCredentialsFromAwsSSO(props, retry=true)
       }
     }    
@@ -420,7 +437,6 @@ async function getStsCredentialsFromAwsSSO(props, retry=false){
 async function refreshAwsRolesAwsSSO(port) {
     let props = await storage.get(null)
     let creds=await getStsCredentialsFromAwsSSO(props)
-    // console.log(creds)
     let credsObj = {
         "AccessKeyId": creds.accessKeyId,
         "SecretAccessKey": creds.secretAccessKey,
@@ -433,7 +449,6 @@ async function refreshAwsRolesAwsSSO(port) {
     }    
     storage.set({'last_msg':'success'});
     if (port) {
-        console.log(`port is ${port}`)
         port.postMessage('sts_ready');
     }
 }
@@ -464,11 +479,11 @@ getApi().runtime.onStartup.addListener(function() {
 getApi().alarms.onAlarm.addListener(function( alarm ) {
     storage.get(null, function(props) {
         if (alarm.name==='refreshToken'){
-            console.log("token refresh alarm triggered")
+            debug("token refresh alarm triggered")
             awsInit(props, null, 'refresh');
         }
         else if(alarm.name==='refreshSSO') {
-            console.log("role refresh alarm triggered")
+            debug("role refresh alarm triggered")
             awsInit(props, null, 'role_refresh');
         }
     })
@@ -488,7 +503,7 @@ chrome.windows.onFocusChanged.addListener(async (windowId) => {
         const shouldRefresh = !nextRefreshTime || nextRefreshTime <= Date.now();
         
         if (shouldRefresh) {
-            console.log("SSO refresh needed, running role_refresh");
+            debug("SSO refresh needed, running role_refresh");
             const credExtractor = credExtractors[idp_name]
             await credExtractor(props, null, "role_refresh");
             
@@ -498,7 +513,7 @@ chrome.windows.onFocusChanged.addListener(async (windowId) => {
             await storage.set({ 'sso_next_refresh': newNextRefreshTime });
             console.log(`Next SSO refresh scheduled for: ${new Date(newNextRefreshTime)}`);
         } else {
-            console.log(`SSO refresh not needed yet. Next refresh at: ${new Date(nextRefreshTime)}`);
+            debug(`SSO refresh not needed yet. Next refresh at: ${new Date(nextRefreshTime)}`);
         }
     }
 });
@@ -506,7 +521,6 @@ chrome.windows.onFocusChanged.addListener(async (windowId) => {
 
 function awsInit(props, port=null, jobType='refresh'){
     let idp_name = props['idp_type']||"none"
-    console.log(`idp_name: ${idp_name}, jobType: ${jobType}`)
     if (port || idp_name!=="awssso"){
         const credExtractor = credExtractors[idp_name]
         credExtractor(props, port, jobType)
@@ -587,6 +601,7 @@ function updateTabWithRetry(tabId, updateProps, callback, retries = 3, delay = 1
 }
 
 async function main() {
+    await initializeDebug();
     getApi().runtime.onConnect.addListener(function(port) {
         let portEx = new portWithExceptions(port);
         port.onMessage.addListener(async function(msg) {
@@ -615,7 +630,7 @@ async function main() {
                 if (confCheck(props)) {
                     awsInit(props, portEx, msg)
                     if (props.idp_type === "awssso") {
-                        console.log("creating alarm for role refresh")
+                        debug("creating alarm for role refresh")
                         await alarmLock('refreshSSO', props.refresh_interval_sso)
                     }
                 }

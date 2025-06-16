@@ -54,6 +54,12 @@ const MENU_CONFIG = {
         id: "clientupdate",
         label: "Update local AWS Credentials profile",
         helpText: "If enabled, updates the AWS AlwaysON service with new credentials, which then updates the [default] profile in the aws credentials file."
+      },
+      {
+        type: "checkbox",
+        id: "debug_logging",
+        label: "Enable debug logging",
+        helpText: "If enabled, debug messages will be logged to the browser console. Useful for troubleshooting."
       }
     ],
     
@@ -149,6 +155,7 @@ const MENU_CONFIG = {
       session_duration: 3600,
       platform: getPlatform(),
       clientupdate: false,
+      debug_logging: false,
       idp_type: 'google',
       refresh_interval_sso: 360,
       awssso_subdomain: '',
