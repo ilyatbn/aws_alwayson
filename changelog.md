@@ -120,11 +120,13 @@ v1.3.0
 - in AWS SSO, the toggle now only updates the client perioducally.
 - in AWS SSO, the A button now refreshes the AWS SSO token globally every 6 hours (configurable)
 - in AWS SSO, added button to AWS console.
-- As far as I could see, "Multi Session" in AWS console works fine with the current code.
+- "Multi Session" in AWS console works fine with the current code.
 ___
-v2.0.0
-- All hail AI. Used cursor to refactor loads of things. now it's a vibe-coding project :)
-- decided to go major version due to above.
-- Options is totally redesigned.
-- Roles menu got a fresh coat of paint.
-- AWS SSO is semi automatic since all other options we're causing multiple tabs to open and get stuck. there's a trigger configured to check a time interval every time any tab is focused, meaning that once every few hours you need to check your browser, and if the timer has passed, a new tab will be created to fetch creds.
+v2.0.0 - Major version due to added LLM usage and major menu refactors which may break stuff.
+- Options is totally redone. using 
+- Main menu got a fresh coat of paint.
+- dropped Firefox support because of it's annoying MV2/3 handing of permissions. No time for this for now.
+- fixed bug where many tabs opened. This is due to how Chromium handles alarms, and the only solution I found was to use an event trigger where the user interacts with the browser.
+- fixed error bar still being displayed when clicking autofill (which is the main scheduler on aws sso)
+- fixed bug where tab did not open and threw an error
+- fixed bug where the initial aws sso token fetch did not enable all acconts buttons

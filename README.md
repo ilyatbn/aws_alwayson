@@ -15,6 +15,35 @@ The extension was developed for Chrome but works mostly fine on all major browse
 - Get temporary credentials for assumed role (STS) to use for CLI access.
 - Automatically update local aws credentials file using provded clients.
 
+
+## How it works
+
+This is quite easy, we fetch the data the exact same way the user would if they clicked the AWS button, then "capture" the relevant data.
+
+
+### Google Workspace
+
+Google Workspace sign in is simple and deterministic. 
+You provide the Identity Provider ID (IDPID) and Service provider ID(SPID) of your "SAML App" in Google Workspace, and the SAML provider name as you configured it in AWS, and it automatically performs the relevant URL fetches exactly the same way Google does it when clicking the link from within the list of "Google Apps".  
+After capturing the correct SAMLResponse token, we use AWS STS API's AssumeRoleWithSAML action to receive STS credentials to AWS.
+
+- Supports only Google Workspace in a very specific SAML implementation.
+- Works on a single role at a time.
+- Fully seamless and automated. Works flawlessly.
+
+### AWS SSO
+
+AWS SSO works differently since the initial SSO is done from AWS itself, not from Google. This unfortunately introduced several complications due to AWS fetching data using some obfuscated javascript files with several different tokens after many, many redirects.  
+This is why we went with a simpler method of browsing to the SSO url using a newly created tab, and extracting relevant data from there.  
+This does work in a non deterministic way unfortunately. We've noticed several instances where opening this tab got stuck and required manually closing it and manually restarting the scheduling button.  
+This also brought complications with how the automatic refresh works. We used Chrome's alarms with a timer, but if your computer is alseep, this did not stop the timers, causing many many tabs to open when you open the brower. We did not find a satisfactory solution for this, and switched to event triggers. Right now, in order for a new tab to open, the user must manually interact with the browser. It's not a serious issues since we expect users to go to their browser at elast once in a few hours timeframe, but still not perfect since it cannot work 100% of the time unattended.
+
+- AWS SSO theoretically Supports all IDPs, not only Google, but we haven't tested it. If you want to use it, there's an option to add a custom domain (for extension permissions).
+- AWS SSO is a global sign in. Meaning, after enabling it, all your accounts will have buttons to get STS credentials, as well as a link to open the Web Console.
+- We kept the per-account toggles to activate the automatic client STS updates for that specific account (as default credentials in aws cli)
+- AWS SSO works with fine Multi Session Web Console. 
+- Works in a semi-automatic way. Requires the user to perform any form of interaction with the browser to open a new tab in order to extract new credentials.
+
 ## Installation
 
 \* Should technically work with any chromium based browser.
@@ -28,12 +57,15 @@ Pick the project folder.
 
 ![Options](img/opts_main.png)  
 When you are done, exit the Options menu.  
-Now you can add your user's IAM role or roles or click the time button to fetch them automatically. On AWS SSO, only automatic is avialble at this time since it is also acts as a scheduler.    
+Now you can either add your user's IAM roles manually or click the blue clock button to fetch them automatically.   
+**With AWS SSO, clicking the clock button is mandatory since it also acts as a scheduler to get credentials.**  
 ![Main menu](img/main.png)  
 
-Click on the slider to start the token and client auto refresh procedure. On AWS SSO, this only acts as a client token refresh since all roles are globally loaded and refreshed using the time button.
-After enabling the refresh you can also click on the CLI button to get the temporary STS credentials.  
+Click on the slider button to start the token and client auto refresh procedure.   
+**With AWS SSO, this only acts as a client token refresh since all roles are globally loaded and refreshed using the clock button.**  
 
+After enabling the refresh you can also click on the CLI button to get the temporary STS credentials.  
+**With AWS SSO, you have a button to open the AWS Web Console.**
 ### Updater Service installation
 The credentials updater service runs a minimalistic webserver on 127.0.0.1:31339 that listens requests for updates from the extension. 
 To enabled this feature, click the toggle in the Options menu.  
