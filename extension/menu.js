@@ -472,7 +472,7 @@ async function main() {
   
   let props = await storage.get(null);
   
-  // Set default values if undefined or empty
+  // Set default values if undefined role_refresh empty
   Object.keys(MENU_CONFIG.menu.defaults).forEach(function(item) {
     if (!(item in props) || props[item] === undefined || props[item] === "") {
       storage.set({ [item]: MENU_CONFIG.menu.defaults[item] });

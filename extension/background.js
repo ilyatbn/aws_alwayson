@@ -287,7 +287,12 @@ async function fetchSSOData(headers, region, port) {
     }
 
     // Sort roles by accountId
-    allRoles.sort((a, b) => a.accountId.localeCompare(b.accountId));
+    allRoles.sort((a, b) => {
+      if (a.accountId !== b.accountId) {
+        return a.accountId.localeCompare(b.accountId);
+      }
+      return a.name.localeCompare(b.name);
+    });
 
     // Store sorted roles in storage
     allRoles.forEach((role, index) => {
@@ -465,14 +470,17 @@ async function awsSSOExtractor(props, port=null, jobType='refresh'){
     }
 }
 
-getApi().runtime.onStartup.addListener(function() {
-    storage.get(null, function(props) {
-        if (props['autofill']===undefined) storage.set({"autofill":0})
-        if (props['autofill']==1) {
-            awsInit(props, null, 'role_refresh')
-        }
-        if (confCheck(props)) awsInit(props)
-    })
+getApi().runtime.onStartup.addListener(async function() {
+    debug("Extension startup, validating alarms...");
+    const props = await storage.get(null);
+    if (props['autofill']===undefined) storage.set({"autofill":0})
+    if (props['autofill']==1) {
+        awsInit(props, null, 'role_refresh')
+    }
+    if (confCheck(props)) awsInit(props)
+    
+    // Validate alarms after startup
+    await validateAlarms(props);
 })
 
 // Handler for all alarms configured in "main"
@@ -490,23 +498,38 @@ getApi().alarms.onAlarm.addListener(function( alarm ) {
 });
 
 chrome.windows.onFocusChanged.addListener(async (windowId) => {
-    // get local storage items as props
-    // if props.idp_type is awssso and props.jobType is role_refresh, check if we need to refresh by using localstorage nextrefreshtime
-    // if we need to refresh and the window is focused, refresh the credentials using credExtractor
-    // set a new nextrefreshtime in localstorage based on props.refresh_interval_sso
-    // if the window is not focused, do nothing
+
     let props = await storage.get(null)
     let idp_name = props['idp_type']||"none"
     let nextRefreshTime = props['sso_next_refresh']||null
+    let autofill = props['autofill']||0
 
     if (idp_name === "awssso" && windowId !== chrome.windows.WINDOW_ID_NONE){
-        const shouldRefresh = !nextRefreshTime || nextRefreshTime <= Date.now();
+        // If no nextRefreshTime is set, set it and wait for next time
+        if (!nextRefreshTime) {
+            debug("Initial setup: setting nextRefreshTime and waiting for next focus");
+            const refreshIntervalMs = parseInt(props.refresh_interval_sso) * 60 * 1000; // Convert minutes to milliseconds
+            const newNextRefreshTime = Date.now() + refreshIntervalMs;
+            await storage.set({ 'sso_next_refresh': newNextRefreshTime });
+            return;
+        }
+        
+        // Check if autofill is enabled
+        if (autofill !== 1) {
+            debug("Autofill not enabled, setting nextRefreshTime and waiting for next focus");
+            const refreshIntervalMs = parseInt(props.refresh_interval_sso) * 60 * 1000; // Convert minutes to milliseconds
+            const newNextRefreshTime = Date.now() + refreshIntervalMs;
+            await storage.set({ 'sso_next_refresh': newNextRefreshTime });
+            return;
+        }
+        
+        const shouldRefresh = nextRefreshTime <= Date.now();
         
         if (shouldRefresh) {
             debug("SSO refresh needed, running role_refresh");
             const credExtractor = credExtractors[idp_name]
-            await credExtractor(props, null, "role_refresh");
-            
+            // await credExtractor(props, null, "role_refresh");
+            await getStsCredentialsFromAwsSSO(props)
             // Set next refresh time
             const refreshIntervalMs = parseInt(props.refresh_interval_sso) * 60 * 1000; // Convert minutes to milliseconds
             const newNextRefreshTime = Date.now() + refreshIntervalMs;
@@ -526,18 +549,119 @@ function awsInit(props, port=null, jobType='refresh'){
         credExtractor(props, port, jobType)
     }
 };
+
+// Add this function to check and debug all configured alarms
+async function checkAndDebugAlarms() {
+  debug("Checking all configured alarms...");
   
-async function alarmLock(alarmName, refreshInterval) {
-    const { alarmEnabled } = await storage.get(alarmName);
-    if (!alarmEnabled) {
-        // validate alarm is not already set anyway
-        const alarm = await getApi().alarms.get(alarmName);
-        if (!alarm) {
-            getApi().alarms.create(alarmName, { periodInMinutes: parseInt(refreshInterval) });
-            await storage.set({alarmKey: true});
-        }
+  try {
+    const allAlarms = await getApi().alarms.getAll();
+    debug("All alarms:", allAlarms);
+    
+    // Check for our specific alarms
+    const refreshTokenAlarm = allAlarms.find(alarm => alarm.name === 'refreshToken');
+    const refreshSSOAlarm = allAlarms.find(alarm => alarm.name === 'refreshSSO');
+    
+    if (refreshTokenAlarm) {
+      debug("refreshToken alarm exists:", refreshTokenAlarm);
+    } else {
+      debug("refreshToken alarm does not exist");
+    }
+    
+    if (refreshSSOAlarm) {
+      debug("refreshSSO alarm exists:", refreshSSOAlarm);
+    } else {
+      debug("refreshSSO alarm does not exist");
+    }
+    
+    return { refreshTokenAlarm, refreshSSOAlarm };
+  } catch (error) {
+    debug("Error checking alarms:", error);
+    return { refreshTokenAlarm: null, refreshSSOAlarm: null };
+  }
+}
+
+// New function to clear alarm and lock
+async function alarmUnlock(alarmName) {
+  debug(`alarmUnlock called for ${alarmName}`);
+  
+  try {
+    // Clear the alarm
+    await getApi().alarms.clear(alarmName);
+    debug(`Alarm ${alarmName} cleared`);
+    
+    // Clear the lock
+    const storageKey = `${alarmName}Enabled`;
+    await storage.set({ [storageKey]: false });
+    debug(`Lock for ${alarmName} cleared`);
+  } catch (error) {
+    debug(`Error in alarmUnlock for ${alarmName}:`, error);
+  }
+}
+
+// Function to validate and recreate missing alarms
+async function validateAlarms(props) {
+  debug("Validating alarms...");
+  
+  // Check current alarms
+  const { refreshTokenAlarm, refreshSSOAlarm } = await checkAndDebugAlarms();
+  
+  // Validate refreshToken alarm
+  if (props.idp_type && props.idp_type !== 'none' && props.refresh_interval) {
+    if (!refreshTokenAlarm) {
+      debug("refreshToken alarm missing, creating it");
+      await alarmLock('refreshToken', props.refresh_interval);
+    } else {
+      debug("refreshToken alarm exists, validating interval");
+      if (refreshTokenAlarm.periodInMinutes !== parseInt(props.refresh_interval)) {
+        debug(`Updating refreshToken interval from ${refreshTokenAlarm.periodInMinutes} to ${props.refresh_interval}`);
+        await alarmLock('refreshToken', props.refresh_interval);
+      }
     }
   }
+  
+  // Validate refreshSSO alarm
+  if (props.idp_type === 'awssso' && props.refresh_interval_sso) {
+    if (!refreshSSOAlarm) {
+      debug("refreshSSO alarm missing, creating it");
+      await alarmLock('refreshSSO', props.refresh_interval_sso);
+    } else {
+      debug("refreshSSO alarm exists, validating interval");
+      if (refreshSSOAlarm.periodInMinutes !== parseInt(props.refresh_interval_sso)) {
+        debug(`Updating refreshSSO interval from ${refreshSSOAlarm.periodInMinutes} to ${props.refresh_interval_sso}`);
+        await alarmLock('refreshSSO', props.refresh_interval_sso);
+      }
+    }
+  }
+}
+  
+async function alarmLock(alarmName, refreshInterval) {
+    debug(`alarmLock called for ${alarmName} with interval ${refreshInterval}`);
+    
+    try {
+        // Check if alarm actually exists
+        const alarm = await getApi().alarms.get(alarmName);
+        const storageKey = `${alarmName}Enabled`;
+        
+        if (!alarm) {
+            debug(`Alarm ${alarmName} does not exist, creating it`);
+            await getApi().alarms.create(alarmName, { periodInMinutes: parseInt(refreshInterval) });
+            await storage.set({ [storageKey]: true });
+            debug(`Alarm ${alarmName} created successfully`);
+        } else {
+            debug(`Alarm ${alarmName} already exists:`, alarm);
+            // Update the alarm if interval changed
+            if (alarm.periodInMinutes !== parseInt(refreshInterval)) {
+                debug(`Updating ${alarmName} interval from ${alarm.periodInMinutes} to ${refreshInterval}`);
+                await getApi().alarms.clear(alarmName);
+                await getApi().alarms.create(alarmName, { periodInMinutes: parseInt(refreshInterval) });
+            }
+            await storage.set({ [storageKey]: true });
+        }
+    } catch (error) {
+        debug(`Error in alarmLock for ${alarmName}:`, error);
+    }
+}
 
 // Helper functions for tab operations with retry logic
 function createTabWithRetry(tabOptions, callback, retries = 3, delay = 1000) {
@@ -602,6 +726,11 @@ function updateTabWithRetry(tabId, updateProps, callback, retries = 3, delay = 1
 
 async function main() {
     await initializeDebug();
+    
+    // Validate alarms on startup
+    const props = await storage.get(null);
+    await validateAlarms(props);
+    
     getApi().runtime.onConnect.addListener(function(port) {
         let portEx = new portWithExceptions(port);
         port.onMessage.addListener(async function(msg) {
@@ -611,13 +740,16 @@ async function main() {
             }
             //Stop all background schedule jobs.
             if (msg==='refreshoff'){
+                debug("Received refreshoff message");
                 storage.set({'checked':0});
-                getApi().alarms.clear("refreshToken");
-                await storage.set({"refreshToken": false});
+                await alarmUnlock('refreshToken');
+                await alarmUnlock('refreshSSO');
+                debug("All alarms and locks cleared");
             }
             //Start background role refresh
             if (msg==='refreshon')
             {
+                debug("Received refreshon message");
                 if(confCheck(props)){
                     await alarmLock('refreshToken', props.refresh_interval)
                     awsInit(props, portEx);
@@ -627,10 +759,11 @@ async function main() {
             }
             //Start role refresh
             if (msg=='role_refresh') {
+                debug("Received role_refresh message");
                 if (confCheck(props)) {
                     awsInit(props, portEx, msg)
                     if (props.idp_type === "awssso") {
-                        debug("creating alarm for role refresh")
+                        debug("Creating alarm for role refresh")
                         await alarmLock('refreshSSO', props.refresh_interval_sso)
                     }
                 }
